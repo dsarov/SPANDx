@@ -25,7 +25,7 @@ In addition, Picard, GATK and SAMtools handle spaces within contig names differe
 
 By default all reads in SPANDx format (i.e. strain_1_sequence.fastq.gz) in the current working directory will be processed. 
 Sequence files will be aligned against the reference using BWA, alignments will be filtered and converted using SAMtools and Picard Tools.
-SNPs and indels will be identified with GATK and coverage assessed with BEDtools.  SNP and indel matrices will be generated with GATK and VCFTools.
+SNPs and indels will be identified with GATK and coverage assessed with BEDtools.  SPANDx will then merge SNP and indel variants into matrices for phylogenetic resconstruction.
 Identification of variants across multiple genomes involves several quality assessment steps in an attempt to minimize false positive variant calls 
 
 Written by Derek Sarovich and Erin Price - Menzies School of Health Research, Darwin, Australia
