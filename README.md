@@ -1,6 +1,8 @@
 # SPANDx
 SPANDx - a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets
 
+SPANDx now works with both SGE and PBS (Torque) resource managers
+
 USAGE: SPANDx.sh 
 <parameters, required> 
 -r <reference, without .fasta extension> 
