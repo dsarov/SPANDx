@@ -1,0 +1,33 @@
+# SPANDx
+SPANDx - a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets
+
+USAGE: SPANDx.sh 
+<parameters, required> 
+-r <reference, without .fasta extension> 
+[parameters, optional] 
+-o [organism] 
+-m [generate SNP matrix yes/no] 
+-i [generate indel matrix yes/no] 
+-a [include annotation yes/no] 
+-v [Variant genome file. Name must match the SnpEff database] 
+-s [Specify read prefix to run single strain or none to construct a SNP matrix from a previous analysis ] 
+-t [Sequencing technology used Illumina/Illumina_old/454/PGM] 
+-p [Pairing of reads PE/SE] -w [Window size in base pairs for BEDcoverage module]
+
+SPANDx by default expects reads to be paired end, Illumina data in the format: STRAIN_1_sequence.fastq.gz for the first pair and STRAIN_2_sequence.fastq.gz for the second pair. 
+Reads not in this format will be ignored.
+If your data are not paired, you must set the -p parameter to SE to denote unpaired reads. By default -p is set to PE.
+
+SPANDx requires a reference file in FASTA format. 
+For compatibility with all steps in SPANDx, FASTA files should conform to the specifications listed here: http://www.ncbi.nlm.nih.gov/BLAST/blastcgihelp.shtml
+Note that the use of nucleotides other than A, C, G, or T is not supported by certain programs in SPANDx and these should not be used in reference FASTA files. 
+In addition, Picard, GATK and SAMtools handle spaces within contig names differently. Therefore, please avoid using spaces or special characters (e.g. $/*) in contig names.
+
+By default all reads in SPANDx format (i.e. strain_1_sequence.fastq.gz) in the current working directory will be processed. 
+Sequence files will be aligned against the reference using BWA, alignments will be filtered and converted using SAMtools and Picard Tools.
+SNPs and indels will be identified with GATK and coverage assessed with BEDtools.  SNP and indel matrices will be generated with GATK and VCFTools.
+Identification of variants across multiple genomes involves several quality assessment steps in an attempt to minimize false positive variant calls 
+
+Written by Derek Sarovich and Erin Price - Menzies School of Health Research, Darwin, Australia
+Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au
+If you find SPANDx useful and use it in published work please cite - SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618"
