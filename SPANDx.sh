@@ -446,6 +446,13 @@ if [ "$annotate" == yes ]; then
     fi	
 fi
 
+
+
+# The following section will use qsub to run all of the SPANDx jobs specified in the command line
+if [ "$SCHEDULER" == PBS ]; then
+
+#clean batch system log files
+
 if [ -s qsub_ids.txt ]; then
     rm qsub_ids.txt
 fi
@@ -465,9 +472,6 @@ if [ -s matrix_id.txt ]; then
     rm matrix_id.txt
 fi
 
-
-# The following section will use qsub to run all of the SPANDx jobs specified in the command line
-if [ "$SCHEDULER" == PBS ]; then
 
 ## Indexing of the reference with SAMTools and BWA
 ## creation of the BED file for the bedcoverage module
@@ -783,6 +787,27 @@ fi
 
 if [ "$SCHEDULER" == SGE ]; then
 
+#clean batch system log files
+
+if [ -s qsub_ids.txt ]; then
+    rm qsub_ids.txt
+fi
+if [ -s qsub_ids2.txt ]; then
+    rm qsub_ids2.txt
+fi
+if [ -s qsub_array_ids.txt ]; then
+    rm qsub_array_ids.txt
+fi
+if [ -s mastervcf_id.txt ]; then
+    rm mastervcf_id.txt
+fi
+if [ -s clean_vcf_id.txt ]; then
+	rm clean_vcf_id.txt
+fi
+if [ -s matrix_id.txt ]; then
+    rm matrix_id.txt
+fi
+
 ## Indexing of the reference with SAMTools and BWA
 ## creation of the BED file for the bedcoverage module
 ## creation of the GATK and picard reference dictionaries
@@ -1095,7 +1120,30 @@ fi
   fi
 fi
 
+################################ SLURM #############################################
+
 if [ "$SCHEDULER" == SLURM ]; then
+
+#clean batch system log files
+
+if [ -s sbatch_ids.txt ]; then
+    rm sbatch_ids.txt
+fi
+if [ -s sbatch_ids2.txt ]; then
+    rm sbatch_ids2.txt
+fi
+if [ -s sbatch_array_ids.txt ]; then
+    rm sbatch_array_ids.txt
+fi
+if [ -s mastervcf_id.txt ]; then
+    rm mastervcf_id.txt
+fi
+if [ -s clean_vcf_id.txt ]; then
+	rm clean_vcf_id.txt
+fi
+if [ -s matrix_id.txt ]; then
+    rm matrix_id.txt
+fi
 
 ## Indexing of the reference with SAMTools and BWA
 ## creation of the BED file for the bedcoverage module
@@ -1104,19 +1152,19 @@ if [ "$SCHEDULER" == SLURM ]; then
   if [ ! -s "$ref_index" ]; then
 	echo -e "Submitting sbatch job for BWA reference indexing\n"
     cmd="$BWA index -a is -p ${seq_directory}/${ref} ${seq_directory}/${ref}.fasta"
-    sbatch_id=`sbatch -N index -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+    sbatch_id=`sbatch --job-name=index -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
     echo -e "$sbatch_id" >> sbatch_ids.txt
   fi
   if [ ! -s "$REF_INDEX_FILE" ]; then
     echo -e "Submitting sbatch job for SAMtools reference indexing\n"
     cmd="$SAMTOOLS faidx ${seq_directory}/${ref}.fasta"
-    sbatch_id=`sbatch -N SAM_index -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+    sbatch_id=`sbatch --job-name=SAM_index -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
     echo -e "$sbatch_id" >> sbatch_ids.txt
   fi
   if [ ! -s "$REF_DICT" ]; then
     echo -e "Submitting sbatch job for ${ref}.dict creation\n"
     cmd="$JAVA $SET_VAR $CREATEDICT R=${seq_directory}/${ref}.fasta O=$REF_DICT"
-	sbatch_id=`sbatch -N PICARD_dict -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+	sbatch_id=`sbatch --job-name=PICARD_dict -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 	echo -e "$sbatch_id" >> sbatch_ids.txt
   fi
   if [ ! -s "$REF_BED" -a sbatch_ids.txt ]; then
@@ -1124,13 +1172,13 @@ if [ "$SCHEDULER" == SLURM ]; then
 	sbatch_cat_ids=`cat sbatch_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
 	depend="-hold_jid ${sbatch_cat_ids}"
     cmd="$BEDTOOLS makewindows -g $REF_INDEX_FILE -w $window > $REF_BED"
-    sbatch_id=`sbatch -N BED_window -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+    sbatch_id=`sbatch --job-name=BED_window -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
    echo -e "$sbatch_id" >> sbatch_ids.txt	
   fi
   if [ ! -s "$REF_BED" -a ! sbatch_ids.txt ]; then
     echo -e "Submitting sbatch job for BED file construction with BEDTools\n"
     cmd="$BEDTOOLS makewindows -g $REF_INDEX_FILE -w $window > $REF_BED"
-    sbatch_id=`sbatch -N BED_window -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+    sbatch_id=`sbatch --job-name=BED_window -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
     echo -e "$sbatch_id" >> sbatch_ids.txt	
   fi
 
@@ -1142,7 +1190,7 @@ if [ -s sbatch_ids.txt ]; then
     if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/$sequences.snps.PASS.vcf ]; then
 		echo -e "Submitting sbatch job for sequence alignment and variant calling for $sequences\n"
         var="seq=$sequences,ref=$ref,org=$org,strain=$strain,variant_genome=$variant_genome,annotate=$annotate,tech=$tech,pairing=$pairing,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH"
-		sbatch_array_id=`sbatch -N aln_sequences -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
+		sbatch_array_id=`sbatch --job-name=aln_sequences -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
         echo -e "$sbatch_array_id" >> sbatch_array_ids.txt
 	fi
         
@@ -1151,7 +1199,7 @@ if [ ! -s sbatch_ids.txt ]; then
     if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/$sequences.snps.PASS.vcf ]; then
 		echo -e "Submitting sbatch job for sequence alignment and variant calling for ${sequences[$i]}\n"
 	    var="seq=$sequences,ref=$ref,org=$org,strain=$strain,variant_genome=$variant_genome,annotate=$annotate,tech=$tech,pairing=$pairing,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH"
-		sbatch_array_id=`sbatch -N aln_$sequences -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
+		sbatch_array_id=`sbatch --job-name=aln_$sequences -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
 		echo -e "$sbatch_array_id" >> sbatch_array_ids.txt
 	fi
 fi
@@ -1169,7 +1217,7 @@ if [ -s sbatch_ids.txt ]; then
             if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/${sequences[$i]}.snps.PASS.vcf ]; then
 		        echo -e "Submitting sbatch job for sequence alignment and variant calling for ${sequences[$i]}\n"
                 var="seq=${sequences[$i]},ref=$ref,org=$org,strain=$strain,variant_genome=$variant_genome,annotate=$annotate,tech=$tech,pairing=$pairing,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH"
-		        sbatch_array_id=`sbatch -N aln_${sequences[$i]} -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
+		        sbatch_array_id=`sbatch --job-name=aln_${sequences[$i]} -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
                 echo -e "$sbatch_array_id" >> sbatch_array_ids.txt
 	        fi
         done
@@ -1179,7 +1227,7 @@ if [ ! -s sbatch_ids.txt ]; then
             if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/${sequences[$i]}.snps.PASS.vcf ]; then
 		        echo -e "Submitting sbatch job for sequence alignment and variant calling for ${sequences[$i]}\n"
 	    	    var="seq=${sequences[$i]},ref=$ref,org=$org,strain=$strain,variant_genome=$variant_genome,annotate=$annotate,tech=$tech,pairing=$pairing,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH"
-		        sbatch_array_id=`sbatch -N aln_${sequences[$i]} -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
+		        sbatch_array_id=`sbatch --job-name=aln_${sequences[$i]} -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/Align_SNP_indel.sh`
 				echo -e "$sbatch_array_id" >> sbatch_array_ids.txt
 	        fi
         done
@@ -1196,13 +1244,13 @@ if [ -s sbatch_array_ids.txt -a ! -s Phylo/out/master.vcf ]; then
     depend="-hold_jid ${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of master VCF file\n"
     var="ref=$ref,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Master_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/Master_vcf.sh`
+	sbatch_matrix_id=`sbatch --job-name=Master_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/Master_vcf.sh`
 	echo -e "$sbatch_matrix_id" >> mastervcf_id.txt	
 fi
 if [ ! -s sbatch_array_ids.txt -a ! -s Phylo/out/master.vcf ]; then
     echo -e "Submitting sbatch job for creation of master VCF file\n"
     var="ref=$ref,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Master_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/Master_vcf.sh`
+	sbatch_matrix_id=`sbatch --job-name=Master_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/Master_vcf.sh`
 	echo -e "$sbatch_matrix_id" >> mastervcf_id.txt
 fi
 
@@ -1219,12 +1267,12 @@ if [ -s mastervcf_id.txt ]; then
     for (( i=0; i<n; i++ )); do
 	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${sequences[$i]}.clean.vcf ]; then
 		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/out/master.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-			sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+			sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 			echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
 		if [ ! -s $PBS_O_WORKDIR/Phylo/indels/out/${sequences[$i]}.clean.vcf -a "$indel_merge" == yes ]; then
 		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/indels/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/indels/out/master_indels.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-			sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+			sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 			echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
     done  
@@ -1238,12 +1286,12 @@ if [ ! -s mastervcf_id.txt ]; then
     for (( i=0; i<n; i++ )); do
 	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${sequences[$i]}.clean.vcf ]; then
 		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/out/master.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-			sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+			sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 			echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
 		if [ ! -s $PBS_O_WORKDIR/Phylo/indels/out/${sequences[$i]}.clean.vcf -a "$indel_merge" == yes ]; then
 		cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/indels/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/indels/out/master_indels.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-		sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+		sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 		echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
     done 
@@ -1255,13 +1303,13 @@ if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_ma
     depend="-hold_jid ${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of SNP array\n"
     var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
+	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting sbatch job for creation of SNP array\n"
     var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
+	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
 }
@@ -1276,13 +1324,13 @@ if [ -s sbatch_ids.txt -a ! -s Phylo/out/master.vcf ]; then
     depend="-hold_jid ${sbatch_cat_ids}"
 	echo -e "Submitting sbatch job for creation of master VCF file\n"
     var="ref=$ref,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Master_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/Master_vcf_final.sh`
+	sbatch_matrix_id=`sbatch --job-name=Master_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/Master_vcf_final.sh`
 	echo -e "$sbatch_matrix_id" >> mastervcf_id.txt
 fi
 if [ ! -s sbatch_ids.txt -a ! -s Phylo/out/master.vcf ]; then
     echo -e "Submitting sbatch job for creation of master VCF file\n"
     var="ref=$ref,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Master_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/Master_vcf_final.sh`
+	sbatch_matrix_id=`sbatch --job-name=Master_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/Master_vcf_final.sh`
 	echo -e "$sbatch_matrix_id" >> mastervcf_id.txt
 fi
 
@@ -1299,7 +1347,7 @@ if [ -s mastervcf_id.txt ]; then
     for (( i=0; i<n; i++ )); do
 	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${out[$i]} ]; then
 		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/out/master.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-			sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+			sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 			echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
     done  
@@ -1313,7 +1361,7 @@ if [ ! -s mastervcf_id.txt ]; then
     for (( i=0; i<n; i++ )); do
 	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${out[$i]} ]; then
 		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/out/master.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-			sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+			sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 			echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
     done  
@@ -1333,7 +1381,7 @@ if [ -s mastervcf_id.txt -a "$indel_merge" == yes ]; then
     for (( i=0; i<n; i++ )); do
 	    if [ ! -s $PBS_O_WORKDIR/Phylo/indels/out/${out[$i]} ]; then
 		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/indels/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/indels/out/master_indels.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-			sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+			sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 			echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
     done  
@@ -1347,27 +1395,25 @@ if [ ! -s mastervcf_id.txt -a "$indel_merge" == yes ]; then
     for (( i=0; i<n; i++ )); do
 	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${out[$i]} ]; then
 		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/indels/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/indels/out/master_indels.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
-			sbatch_clean_id=`sbatch -N clean_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v command="$cmd" "$SCRIPTPATH"/Header.pbs`
+			sbatch_clean_id=`sbatch --job-name=clean_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
 			echo -e "$sbatch_clean_id" >> clean_vcf_id.txt
 		fi
     done  
 fi
 
-#####################
-
 
 if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     sbatch_cat_ids=`cat clean_vcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-hold_jid ${sbatch_cat_ids}"
+    depend="-d ${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of SNP array\n"
     var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
+	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting sbatch job for creation of SNP array\n"
     var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
-	sbatch_matrix_id=`sbatch -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
+	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf -j $ERROR_OUT_SGE --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
 }
@@ -1378,16 +1424,16 @@ merge_BED_slurm ()
 {
 if [ -s sbatch_array_ids.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Bedcov_merge.txt ]; then
     sbatch_cat_ids=`cat sbatch_array_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-hold_jid ${sbatch_cat_ids}"
+    depend="-d ${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for BEDcov merge\n"
     var="seq_path=$seq_directory"
-	sbatch_BED_id=`sbatch -N BEDcov_merge -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/BedCov_merge.sh`
+	sbatch_BED_id=`sbatch --job-name=BEDcov_merge --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/BedCov_merge.sh`
 	#echo -e "$sbatch_BED_id" >> sbatch_BED_id.txt
 fi
 if [ ! -s sbatch_array_ids.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Bedcov_merge.txt ]; then
     echo -e "Submitting sbatch job for BEDcov merge\n"
     var="ref=$ref,seq_path=$seq_directory"
-	sbatch_BED_id=`sbatch -N BEDcov_merge -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/BedCov_merge.sh`
+	sbatch_BED_id=`sbatch --job-name=BEDcov_merge --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/BedCov_merge.sh`
 	#echo -e "$sbatch_BED_id" >> sbatch_BED_id.txt
 fi
 }
