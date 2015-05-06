@@ -1,14 +1,3 @@
-Skip to content
-Sign up Sign in This repository
-Explore
-Features
-Enterprise
-Blog
- Watch 1  Star 0  Fork 0 dsarov/SPANDx
- branch: master  SPANDx/SPANDx.sh
-@dsarovdsarov 6 days ago SPANDx v2.6.1
-1 contributor
-RawBlameHistory     1087 lines (980 sloc)  57.683 kb
 #!/bin/bash
 
 #####################################################
