@@ -1158,8 +1158,8 @@ fi
   fi
   if [ ! -s "$REF_BED" -a sbatch_ids.txt ]; then
     echo -e "Submitting sbatch job for BED file construction with BEDTools\n"
-	sbatch_cat_ids=`cat sbatch_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-	depend="-hold_jid ${sbatch_cat_ids}"
+	sbatch_cat_ids=`cat sbatch_ids.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+	depend="--depend=afterok:${sbatch_cat_ids}"
     cmd="$BEDTOOLS makewindows -g $REF_INDEX_FILE -w $window > $REF_BED"
     sbatch_id=`sbatch --job-name=BED_window --mail-type=$MAIL_SLURM --time=$TIME $depend --export=command="$cmd" "$SCRIPTPATH"/Header.pbs`
    echo -e "$sbatch_id" >> sbatch_ids.txt	
@@ -1174,8 +1174,8 @@ fi
 variants_single_slurm ()
 {
 if [ -s sbatch_ids.txt ]; then
-    sbatch_cat_ids=`cat sbatch_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat sbatch_ids.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+    depend="--depend=afterok:${sbatch_cat_ids}"
     if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/$sequences.snps.PASS.vcf ]; then
 		echo -e "Submitting sbatch job for sequence alignment and variant calling for $sequences\n"
         var="seq=$sequences,ref=$ref,org=$org,strain=$strain,variant_genome=$variant_genome,annotate=$annotate,tech=$tech,pairing=$pairing,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH"
@@ -1200,8 +1200,8 @@ fi
 variants_slurm ()
 {
 if [ -s sbatch_ids.txt ]; then
-    sbatch_cat_ids=`cat sbatch_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat sbatch_ids.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+    depend="--depend=afterok:${sbatch_cat_ids}"
         for (( i=0; i<n; i++ )); do
             if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/${sequences[$i]}.snps.PASS.vcf ]; then
 		        echo -e "Submitting sbatch job for sequence alignment and variant calling for ${sequences[$i]}\n"
@@ -1229,8 +1229,8 @@ fi
 matrix_slurm ()			
 {	
 if [ -s sbatch_array_ids.txt -a ! -s Phylo/out/master.vcf ]; then
-    sbatch_cat_ids=`cat sbatch_array_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat sbatch_array_ids.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+    depend="--depend=afterok:${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of master VCF file\n"
     var="ref=$ref,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
 	sbatch_matrix_id=`sbatch --job-name=Master_vcf --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/Master_vcf.sh`
@@ -1246,8 +1246,8 @@ fi
 ### creates clean.vcf files for SNP calls across all genomes
 
 if [ -s mastervcf_id.txt ]; then
-    sbatch_cat_ids=`cat mastervcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-	depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat mastervcf_id.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+	depend="--depend=afterok:${sbatch_cat_ids}"
 	echo -e "Submitting sbatch job for error checking SNP calls across all genomes\n"
 	out=("${sequences_tmp[@]/_1_sequence.fastq.gz/.clean.vcf}")
 	bam=("${sequences_tmp[@]/_1_sequence.fastq.gz/.bam}")
@@ -1288,8 +1288,8 @@ fi
 ## if indels merge is set to yes creates clean.vcf files for all indels identified across all genomes
 
 if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
-    sbatch_cat_ids=`cat clean_vcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat clean_vcf_id.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+    depend="--depend=afterok:${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of SNP array\n"
     var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
 	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
@@ -1309,8 +1309,8 @@ fi
 matrix_final_slurm ()			
 {
 if [ -s sbatch_ids.txt -a ! -s Phylo/out/master.vcf ]; then
-    sbatch_cat_ids=`cat sbatch_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat sbatch_ids.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+    depend="--depend=afterok:${sbatch_cat_ids}"
 	echo -e "Submitting sbatch job for creation of master VCF file\n"
     var="ref=$ref,seq_path=$seq_directory,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
 	sbatch_matrix_id=`sbatch --job-name=Master_vcf --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/Master_vcf_final.sh`
@@ -1326,8 +1326,8 @@ fi
 ### creates clean.vcf files for SNP calls across all genomes
 
 if [ -s mastervcf_id.txt ]; then
-    sbatch_cat_ids=`cat mastervcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-	depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat mastervcf_id.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+	depend="--depend=afterok:${sbatch_cat_ids}"
 	echo -e "Submitting sbatch job for error checking SNP calls across all genomes\n"
 	clean_array=(`find $PBS_O_WORKDIR/Phylo/snps/*.vcf -printf "%f "`)
     out=("${clean_array[@]/.vcf/.clean.vcf}")
@@ -1360,8 +1360,8 @@ fi
 
 
 if [ -s mastervcf_id.txt -a "$indel_merge" == yes ]; then
-    sbatch_cat_ids=`cat mastervcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-	depend="-hold_jid ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat mastervcf_id.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+	depend="--depend=afterok:${sbatch_cat_ids}"
 	echo -e "Submitting sbatch job for error checking SNP calls across all genomes\n"
 	clean_array=(`find $PBS_O_WORKDIR/Phylo/indels/*.vcf -printf "%f "`)
     out=("${clean_array[@]/.vcf/.clean.vcf}")
@@ -1392,8 +1392,8 @@ fi
 
 
 if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
-    sbatch_cat_ids=`cat clean_vcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-d ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat clean_vcf_id.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+    depend="--depend=afterok:${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of SNP array\n"
     var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
 	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
@@ -1412,8 +1412,8 @@ fi
 merge_BED_slurm ()
 {
 if [ -s sbatch_array_ids.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Bedcov_merge.txt ]; then
-    sbatch_cat_ids=`cat sbatch_array_ids.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
-    depend="-d ${sbatch_cat_ids}"
+    sbatch_cat_ids=`cat sbatch_array_ids.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
+    depend="--depend=afterok:${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for BEDcov merge\n"
     var="seq_path=$seq_directory"
 	sbatch_BED_id=`sbatch --job-name=BEDcov_merge --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/BedCov_merge.sh`
