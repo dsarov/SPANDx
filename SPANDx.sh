@@ -27,8 +27,9 @@
 # Written by Derek Sarovich and Erin Price - Menzies School of Health Research, Darwin, Australia
 # Please send bug reports to mshr.bioinformatics@gmail.com
 # If you find SPANDx useful and use it in published work please cite - SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618"
-# Version 2.1
+# Version 2.2
 # 2.0-2.1 Added SGE job handling
+# 2.1-2.2 Added SLURM job handling
 #
 #################################################################
 usage()
