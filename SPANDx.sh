@@ -245,57 +245,57 @@ tabix_test=`command -v "$TABIX"`
 java_test=`command -v "$JAVA"`
 
 if [ -z "$bwa_test" ]; then
-	    echo "ERROR: SPANDx requires BWA to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires BWA to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ -z "$samtools_test" ]; then
-	    echo "ERROR: SPANDx requires SAMtools to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires SAMtools to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ ! -f "$GATK" ]; then
-	    echo "ERROR: SPANDx requires the Genome Analysis toolkit and java to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires the Genome Analysis toolkit and java to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ -z "$bedtools_test" ]; then
-	    echo "ERROR: SPANDx requires  BEDtools to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires  BEDtools to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ ! -f "$MARKDUPLICATES" ]; then
-	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ ! -f "$ADDORREPLACEREADGROUPS" ]; then
-	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ ! -f "$BUILDBAMINDEX" ]; then
-	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ ! -f "$CREATEDICT" ]; then
-	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ "$annotate" == yes ]; then
     if [ ! -f "$SNPEFF" ]; then
-	        echo "ERROR: SPANDx requires SnpEff to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	        echo "ERROR: SPANDx requires SnpEff to function. Please make sure the correct path is specified in SPANDx.config"
 		    exit 1
     fi
 fi
 if [ -z "$vcftools_test" ]; then
-	    echo "ERROR: SPANDx requires VCFtools to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires VCFtools to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ -z "$vcfmerge_test" ]; then
-	    echo "ERROR: SPANDx requires vcf-merge to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires vcf-merge to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ -z "$bgzip_test" ]; then
-	    echo "ERROR: SPANDx requires bgzip to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires bgzip to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ -z "$tabix_test" ]; then
-	    echo "ERROR: SPANDx requires tabix to function. Please make sure the correct path is specified in SPANDx.config or the executable is in your PATH"
+	    echo "ERROR: SPANDx requires tabix to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
 if [ -z "$java_test" ]; then
