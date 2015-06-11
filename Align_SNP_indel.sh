@@ -184,14 +184,22 @@ if [ -s "$SAM" -a -s "$UNMAPPED.bam" ]; then
 fi
 
 ### Removal of duplicates using Picard 
-
-if [ ! -s "$BAM_DUPLICATESREM_FILE" -a ! -s "$GATK_REALIGNED_BAM" ]; then ## change TMP_directory here if needed
-    log_eval $PBS_O_WORKDIR "$JAVA $SET_VAR $MARKDUPLICATES I=$BAM_UNIQUE_FILE.bam O=$BAM_DUPLICATESREM_FILE REMOVE_DUPLICATES=true METRICS_FILE=$DUP_METRICS VALIDATION_STRINGENCY=LENIENT"
+if [ "$REMOVE_DUPS"=1 ]; then
+  if [ ! -s "$BAM_DUPLICATESREM_FILE" -a ! -s "$GATK_REALIGNED_BAM" ]; then ## change TMP_directory here if needed
+      log_eval $PBS_O_WORKDIR "$JAVA $SET_VAR $MARKDUPLICATES I=$BAM_UNIQUE_FILE.bam O=$BAM_DUPLICATESREM_FILE REMOVE_DUPLICATES=true METRICS_FILE=$DUP_METRICS VALIDATION_STRINGENCY=LENIENT"
+  fi
+  if [ ! -s "$BAM_DUPLICATESREM_FILE_INDEX" -a ! -s "$GATK_REALIGNED_BAM" ]; then
+      log_eval $PBS_O_WORKDIR "$SAMTOOLS index $BAM_DUPLICATESREM_FILE"
+  fi
 fi
-if [ ! -s "$BAM_DUPLICATESREM_FILE_INDEX" -a ! -s "$GATK_REALIGNED_BAM" ]; then
-    log_eval $PBS_O_WORKDIR "$SAMTOOLS index $BAM_DUPLICATESREM_FILE"
+if [ "$REMOVE_DUPS"=0 ]; then
+  if [ ! -s "$BAM_DUPLICATESREM_FILE" -a ! -s "$GATK_REALIGNED_BAM" ]; then ## change TMP_directory here if needed
+      log_eval $PBS_O_WORKDIR "cp $BAM_UNIQUE_FILE.bam $BAM_DUPLICATESREM_FILE"
+  fi
+  if [ ! -s "$BAM_DUPLICATESREM_FILE_INDEX" -a ! -s "$GATK_REALIGNED_BAM" ]; then
+      log_eval $PBS_O_WORKDIR "$SAMTOOLS index $BAM_DUPLICATESREM_FILE"
+  fi
 fi
-
 ## Realignment around poorly mapped regions ###
 
 if [ ! -s "$GATK_TARGET_FILE" -a ! -s "$GATK_REALIGNED_BAM" ]; then
