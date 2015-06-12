@@ -260,22 +260,22 @@ if [ -z "$bedtools_test" ]; then
 	    echo "ERROR: SPANDx requires  BEDtools to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
-if [ ! -f "$MARKDUPLICATES" ]; then
+if [ ! -f "$PICARD" ]; then
 	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
 		exit 1
 fi
-if [ ! -f "$ADDORREPLACEREADGROUPS" ]; then
-	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
-		exit 1
-fi
-if [ ! -f "$BUILDBAMINDEX" ]; then
-	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
-		exit 1
-fi
-if [ ! -f "$CREATEDICT" ]; then
-	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
-		exit 1
-fi
+#if [ ! -f "$ADDORREPLACEREADGROUPS" ]; then
+#	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
+#		exit 1
+#fi
+#if [ ! -f "$BUILDBAMINDEX" ]; then
+#	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
+#		exit 1
+#fi
+#if [ ! -f "$CREATEDICT" ]; then
+#	    echo "ERROR: SPANDx requires Picard to function. Please make sure the correct path is specified in SPANDx.config"
+#		exit 1
+#fi
 if [ "$annotate" == yes ]; then
     if [ ! -f "$SNPEFF" ]; then
 	        echo "ERROR: SPANDx requires SnpEff to function. Please make sure the correct path is specified in SPANDx.config"
