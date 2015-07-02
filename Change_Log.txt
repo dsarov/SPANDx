@@ -32,4 +32,4 @@ SPANDx2.6.1
 
 SPANDx2.7
 - added SLURM option for resource handling
-- updated multiple scripts to incorporate updated picard version
+- updated multiple scripts to incorporate updated Picard version 1.134
