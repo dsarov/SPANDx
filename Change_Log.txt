@@ -29,3 +29,7 @@ SPANDx2.6.1
 - minor fix in the snp_matrix script to stop an rm command on a non-existent file.
 - minor fix in the genome name checking if the input file for GeneratePlink.sh script
 - There is a known error with Tetra-allelic SNPs and indels being handled incorrectly in the annotated outputs
+
+SPANDx2.7
+- added SLURM option for resource handling
+- updated multiple scripts to incorporate updated picard version
