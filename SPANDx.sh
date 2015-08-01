@@ -30,6 +30,7 @@
 # Version 2.2
 # 2.0-2.1 Added SGE job handling
 # 2.1-2.2 Added SLURM job handling
+# 2.3 Added "no resource manager (NONE)" for job handling
 #
 #################################################################
 usage()
@@ -437,6 +438,11 @@ if [ "$annotate" == yes ]; then
 fi
 
 
+if [ "$SCHEDULER" == PBS -o "$SCHEDULER" == SGE -o "$SCHEDULER" == SLURM -o "$SCHEDULER" == NONE ]; then
+	echo -e "SPANDx will use $SCHEDULER for resource management\n"
+	else
+	echo -e "SPANDx requires you to set the SCHEDULER variable to one of the following: PBS, SGE, SLURM or NONE. \nIt looks like you might have specified the variable incorrectly.\n"
+fi
 
 # The following sections will use the specified resource manager to queue all the SPANDx jobs
 
@@ -1647,7 +1653,7 @@ merge_BED ()
 {
 if [ ! -s qsub_array_ids.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Bedcov_merge.txt ]; then
     echo -e "Running job for BEDcov merge\n"
-    vexport ref=$ref seq_path=$seq_directory
+    export ref=$ref seq_path=$seq_directory
 	"$SCRIPTPATH"/BedCov_merge.sh
 fi
 }
