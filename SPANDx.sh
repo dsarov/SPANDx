@@ -416,14 +416,14 @@ if [ "$annotate" == yes ]; then
 	
 	#test to see if the chromosome names in the SnpEff database match those of the reference file
 	
-	CHR_NAME=`$JAVA -jar $SNPEFF dump "$variant_genome" | grep -A1 'Chromosomes names' | tail -n1 | awk '{print $2}'|sed "s/'//"`
-	REF_CHR=`head -n1 "$ref" | sed 's/>//'`  
+	CHR_NAME=`$JAVA -jar $SNPEFF dump "$variant_genome" | grep -A1 'Chromosomes names' | tail -n1 | awk '{print $2}'|sed "s/'//g"`
+	REF_CHR=`head -n1 "$ref".fasta | sed 's/>//'`  
 	if [ "$CHR_NAME" == "$REF_CHR" ]; then
 	    echo -e "Chromosome names in the SnpEff database match the reference chromosome names, good\n"
 	else
 	    echo -e "Chromosome names in the SnpEff database DON'T match the reference chromosome names.\n"
 		echo -e "Please change the names of the reference file to match those in the SnpEff database.\n"
-		echo -e "If you are unsure what these are run SnpEff dump $variant_genome.\n"
+		echo -e "If you are unsure what these are, run: $JAVA -jar $SNPEFF dump $variant_genome\n"
 		echo -e "The first chromosome name is $CHR_NAME.\n\n"
 		exit 1
 	fi	
