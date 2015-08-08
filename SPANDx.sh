@@ -30,6 +30,7 @@
 # Version 2.2
 # 2.0-2.1 Added SGE job handling
 # 2.1-2.2 Added SLURM job handling
+# 2.3 Added "no resource manager (NONE)" for job handling
 #
 #################################################################
 usage()
@@ -437,8 +438,20 @@ if [ "$annotate" == yes ]; then
 fi
 
 
+if [ "$SCHEDULER" == PBS -o "$SCHEDULER" == SGE -o "$SCHEDULER" == SLURM -o "$SCHEDULER" == NONE ]; then
+	echo -e "SPANDx will use $SCHEDULER for resource management\n"
+	else
+	echo -e "SPANDx requires you to set the SCHEDULER variable to one of the following: PBS, SGE, SLURM or NONE. \nIt looks like you might have specified the variable incorrectly.\n"
+fi
 
-# The following section will use qsub to run all of the SPANDx jobs specified in the command line
+# The following sections will use the specified resource manager to queue all the SPANDx jobs
+
+#########################################################################################
+###                                                                                   ###
+###                              Portable Batch System                                ###
+###                                                                                   ###
+#########################################################################################
+
 if [ "$SCHEDULER" == PBS ]; then
 
 #clean batch system log files
@@ -775,6 +788,14 @@ fi
   fi
 fi
 
+
+
+#########################################################################################
+###                                                                                   ###
+###                              Sun Grid Engine                                      ###
+###                                                                                   ###
+#########################################################################################
+
 if [ "$SCHEDULER" == SGE ]; then
 
 #clean batch system log files
@@ -1110,7 +1131,11 @@ fi
   fi
 fi
 
-################################ SLURM #############################################
+#########################################################################################
+###                                                                                   ###
+###                                    SLURM                                          ###
+###                                                                                   ###
+#########################################################################################
 
 if [ "$SCHEDULER" == SLURM ]; then
 
@@ -1445,6 +1470,209 @@ fi
   fi
 fi
 
+#########################################################################################
+###                                                                                   ###
+###                              No Resource Manager                                  ###
+###                                                                                   ###
+#########################################################################################
+
+
+if [ "$SCHEDULER" == NONE ]; then
+
+if [ ! $PBS_O_WORKDIR ]; then
+        PBS_O_WORKDIR="$PWD"
+fi
+
+cd $PBS_O_WORKDIR
+
+## Indexing of the reference with SAMTools and BWA
+## creation of the BED file for the bedcoverage module
+## creation of the GATK and picard reference dictionaries
+
+  if [ ! -s "$ref_index" ]; then
+	echo -e "\n\nIndexing reference file for BWA\n"
+    cmd="$BWA index -a is -p ${seq_directory}/${ref} ${seq_directory}/${ref}.fasta"
+	echo $cmd
+	$cmd 2>&1
+	sleep 1
+  fi
+  if [ ! -s "$REF_INDEX_FILE" ]; then
+    echo -e "\n\nRunning job for SAMtools reference indexing\n"
+    cmd="$SAMTOOLS faidx ${seq_directory}/${ref}.fasta"
+    echo $cmd
+	$cmd 2>&1
+	sleep 1
+  fi
+  if [ ! -s "$REF_DICT" ]; then
+    echo -e "\n\nRunning job for ${ref}.dict creation\n"
+    cmd="$JAVA $SET_VAR $CREATEDICT R=${seq_directory}/${ref}.fasta O=$REF_DICT"
+	echo $cmd
+	$cmd 2>&1
+	sleep 1
+  fi
+  if [ ! -s "$REF_BED" ]; then
+    echo -e "\n\nRunning job for BED file construction with BEDTools\n"
+	cmd="$BEDTOOLS makewindows -g $REF_INDEX_FILE -w $window "
+    echo $cmd
+	$cmd > $REF_BED
+	sleep 1
+  fi
+ 
+  
+  
+variants_single ()
+{
+    if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/$sequences.snps.PASS.vcf ]; then
+		echo -e "\nRunning job for sequence alignment and variant calling for ${sequences[$i]}\n"
+	    SCRIPTPATH=$SCRIPTPATH
+		echo $SCRIPTPATH
+		export seq=$sequences ref=$ref org=$org strain=$strain variant_genome=$variant_genome annotate=$annotate tech=$tech pairing=$pairing seq_path=$seq_directory SCRIPTPATH=$SCRIPTPATH
+		"$SCRIPTPATH"/Align_SNP_indel.sh 
+		
+	fi
+
+
+}
+
+## Variants is the main alignment and variant calling script contained with SPANDx
+
+variants ()
+{
+        for (( i=0; i<n; i++ )); do
+            if [ ! -s ${PBS_O_WORKDIR}/Outputs/SNPs_indels_PASS/${sequences[$i]}.snps.PASS.vcf ]; then
+		        echo -e "Running job for sequence alignment and variant calling for ${sequences[$i]}\n"
+				
+	    	    export seq=${sequences[$i]} ref=$ref org=$org strain=$strain variant_genome=$variant_genome annotate=$annotate tech=$tech pairing=$pairing seq_path=$seq_directory SCRIPTPATH=$SCRIPTPATH
+		        
+				"$SCRIPTPATH"/Align_SNP_indel.sh
+				
+	        fi
+        done
+
+
+}
+
+
+## Matrix is the main comparative genomics section of SPANDx that relies on the outputs from the variant function above
+matrix ()			
+{	
+
+if [ ! -s Phylo/out/master.vcf ]; then
+    echo -e "Running job for creation of master VCF file\n"
+    export ref=$ref seq_path=$seq_directory SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge
+	"$SCRIPTPATH"/Master_vcf.sh
+	
+fi
+
+### creates clean.vcf files for SNP calls across all genomes
+
+
+    echo -e "Running job for error checking SNP calls across all genomes\n"
+	out=("${sequences_tmp[@]/_1_sequence.fastq.gz/.clean.vcf}")
+	bam=("${sequences_tmp[@]/_1_sequence.fastq.gz/.bam}")
+	bam_array=("${bam[@]/#/$PBS_O_WORKDIR/Phylo/bams/}")
+    n=${#bam_array[@]}
+    for (( i=0; i<n; i++ )); do
+	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${sequences[$i]}.clean.vcf ]; then
+		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/out/master.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
+			echo $cmd
+			$cmd 2>&1
+			
+		fi
+		if [ ! -s $PBS_O_WORKDIR/Phylo/indels/out/${sequences[$i]}.clean.vcf -a "$indel_merge" == yes ]; then
+		cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/indels/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/indels/out/master_indels.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
+		echo $cmd
+		$cmd
+		fi
+    done 
+
+## if indels merge is set to yes creates clean.vcf files for all indels identified across all genomes
+
+if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
+    echo -e "Running job for creation of SNP array\n"
+    export ref=$ref seq_path=$seq_directory variant_genome=$variant_genome annotate=$annotate SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge
+	"$SCRIPTPATH"/SNP_matrix.sh	
+fi
+}
+
+## This function will generate a SNP matrix from the Phylo directory assuming all SNP and BAM files have already been linked into these directories
+## qsub for indel_merge is currently untested
+
+matrix_final ()			
+{
+if [ ! -s qsub_ids.txt -a ! -s Phylo/out/master.vcf ]; then
+    echo -e "Submitting qsub job for creation of master VCF file\n"
+    export ref=$ref seq_path=$seq_directory SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge
+	"$SCRIPTPATH"/Master_vcf_final.sh	
+fi
+
+### creates clean.vcf files for SNP calls across all genomes
+
+if [ ! -s mastervcf_id.txt ]; then
+    echo -e "Running job for error checking SNP calls across all genomes\n"
+    clean_array=(`find $PBS_O_WORKDIR/Phylo/snps/*.vcf -printf "%f "`)
+    out=("${clean_array[@]/.vcf/.clean.vcf}")
+    bam_array=(`find $PBS_O_WORKDIR/Phylo/bams/*.bam`)
+    n=${#bam_array[@]}
+    for (( i=0; i<n; i++ )); do
+	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${out[$i]} ]; then
+		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/out/master.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
+			echo $cmd
+			$cmd 2>&1
+		fi
+    done  
+fi
+
+## if indels merge is set to yes creates clean.vcf files for all indels identified across all genomes
+if [ ! -s mastervcf_id.txt -a "$indel_merge" == yes ]; then
+    echo -e "Submitting qsub job for error checking SNP calls across all genomes\n"
+    clean_array=(`find $PBS_O_WORKDIR/Phylo/indels/*.vcf -printf "%f "`)
+    out=("${clean_array[@]/.vcf/.clean.vcf}")
+    bam_array=(`find $PBS_O_WORKDIR/Phylo/bams/*.bam`)
+    n=${#bam_array[@]}
+    for (( i=0; i<n; i++ )); do
+	    if [ ! -s $PBS_O_WORKDIR/Phylo/out/${out[$i]} ]; then
+		    cmd="$JAVA $SET_VAR $GATK -T UnifiedGenotyper -rf BadCigar -R $PBS_O_WORKDIR/${ref}.fasta -I ${bam_array[$i]} -o $PBS_O_WORKDIR/Phylo/indels/out/${out[$i]} -alleles:masterAlleles $PBS_O_WORKDIR/Phylo/indels/out/master_indels.vcf -gt_mode GENOTYPE_GIVEN_ALLELES -out_mode EMIT_ALL_SITES -stand_call_conf 0.0 -glm BOTH -G none"
+			echo $cmd
+			$cmd
+		fi
+    done  
+fi
+
+#####################
+if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
+    echo -e "Running job for creation of SNP array\n"
+    export ref=$ref seq_path=$seq_directory variant_genome=$variant_genome annotate=$annotate SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge
+	"$SCRIPTPATH"/SNP_matrix.sh
+fi
+}
+
+## This function takes the output of each bedcoverage assessment of the sequence alignment and merges them in a comparative matrix
+## This function is run when $strain=all but not when a single strain is analysed i.e. $strain doesn't equal all
+merge_BED ()
+{
+if [ ! -s qsub_array_ids.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Bedcov_merge.txt ]; then
+    echo -e "Running job for BEDcov merge\n"
+    export ref=$ref seq_path=$seq_directory
+	"$SCRIPTPATH"/BedCov_merge.sh
+fi
+}
+
+### These variable tests determine which of the above functions need to be run for the SPANDx pipeline
+
+  if [ "$strain" == all ]; then
+    variants
+	merge_BED
+  fi
+  if [ "$strain" != all -a "$strain" != none ]; then
+    variants_single
+  fi
+  if [ "$matrix" == yes -a "$strain" != none ]; then
+    matrix
+  fi
+  if [ "$matrix" == yes -a "$strain" == none ]; then
+    matrix_final
+  fi
+fi
+
 exit 0
-Status API Training Shop Blog About
-© 2015 GitHub, Inc. Terms Privacy Security Contact

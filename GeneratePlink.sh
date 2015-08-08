@@ -461,21 +461,3 @@ echo -e "-----------------------------\n"
 
 exit 0
 
-#general commands for plink
-#-- how to run plink
-
-#test the input files
-plink --file Ortho_SNPs --allow-no-sex --noweb
-plink --file Ortho_indels --allow-no-sex --noweb
-plink --file PA_matrix --allow-no-sex --noweb
-
-##make a binary PED file
-plink --file Ortho_SNPs --make-bed --out Ortho1 --allow-no-sex --noweb
-plink --file Ortho_indels --make-bed --out OrthoIndels --allow-no-sex --noweb
-plink --file PA_matrix --make-bed --out OrthoPA --allow-no-sex --noweb
-
-
-#range of significance values adjusted for multiple testing
-plink --bfile Ortho1 --assoc --adjust --out as2 --allow-no-sex --noweb
-plink --bfile OrthoIndels --assoc --adjust --out asindels --allow-no-sex --noweb
-plink --bfile OrthoPA --assoc --adjust --out asPA --allow-no-sex --noweb
