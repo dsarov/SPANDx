@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ## This script will take two input files - inGroup outGroup - and construct the PED file for plink
 #variable one should be inGroup
 #variable number 2 should be outGroup
@@ -193,7 +195,7 @@ if [ $n1 == 0 ]; then
 fi
 
 for (( i=0; i<n1; i++ )); do
-	grep -w -P ${inGroupArrayTmp[i]}'\t' Outputs/Comparative/Ortho_SNP_matrix_RAxML.nex &> /dev/null
+	grep -P ^${inGroupArrayTmp[i]}'\t' Outputs/Comparative/Ortho_SNP_matrix_RAxML.nex &> /dev/null
 	status=$?
     if [ ! $status == 0 ]; then
         echo "I couldn't find all in group strains in the comparative SNPs files" 
@@ -220,7 +222,7 @@ if [ $n2 == 0 ]; then
 fi
 
 for (( i=0; i<n2; i++ )); do
-	grep -w -P ${outGroupArrayTmp[i]}'\t' Outputs/Comparative/Ortho_SNP_matrix_RAxML.nex &> /dev/null
+	grep -P ^${outGroupArrayTmp[i]}'\t' Outputs/Comparative/Ortho_SNP_matrix_RAxML.nex &> /dev/null
 	status=$?
     if [ ! $status == 0 ]; then
         echo "I couldn't find all out group strains in the comparative SNPs files" 
@@ -248,7 +250,7 @@ sort -d genomes > genomes.mrg
 
 cp $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix_RAxML.nex Ortho_SNP_matrix_RAxML.nex
 
-awk '{ print $1 }' genomes | while read f; do grep -w -P $f'\t' Ortho_SNP_matrix_RAxML.nex > $f.SNPs; done; # the grep -w makes sure to grab only the exact matches of the grep pattern rather than an inclusive pattern 
+awk '{ print $1 }' genomes | while read f; do grep -P ^$f'\t' Ortho_SNP_matrix_RAxML.nex > $f.SNPs; done; # the grep -w makes sure to grab only the exact matches of the grep pattern rather than an inclusive pattern 
 for f in *.SNPs; do awk '{print $2 }' $f > $f.tmp; done;
 for f in *.SNPs.tmp; do sed -i 's/./& &\t/g' $f; done;
 
@@ -325,7 +327,7 @@ paste taxa.mrg 012.mrg > 012_taxa
 
 #fetch genomes contained in the in and out group files from the 012 outputs
 
-awk '{ print $1 }' genomes | while read f; do grep -w $f' ' 012_taxa > $f.indels; done;
+awk '{ print $1 }' genomes | while read f; do grep -w ^$f' ' 012_taxa > $f.indels; done;
 for f in *.indels; do sed -i 's/ //g' $f; done
 for f in *.indels; do awk '{print $2 }' $f > $f.tmp; done;
 
@@ -388,7 +390,9 @@ printf "%s\n" "${ped_array[@]}" > temp.col
 awk '{print $1, $1, $2, $3, $4, $5 }' temp.col > genomes
 
 sort -d genomes > genomes.mrg
-awk '{ print $1 }' genomes | while read f; do grep -w -P $f' ' bed_tmp2.trans > $f.PA; done;
+awk '{ print $1 }' genomes | while read f; do grep -P ^$f' ' bed_tmp2.trans > $f.PA; done;
+
+#The above line may break at certain times depending on genome names. There may be difficulties with grep thinking that _ are the start of complete names.
 
 for f in *.PA ; do cut -d ' ' -f2- $f > $f.tmp; done;
 
@@ -411,7 +415,7 @@ paste -d ' ' chr_PA locs_PA locs_col3_4_PA locs_col3_4_PA > PA_matrix.map
 mv PA_matrix.ped $PBS_O_WORKDIR/Outputs/Comparative/PA_matrix.ped
 mv PA_matrix.map $PBS_O_WORKDIR/Outputs/Comparative/PA_matrix.map
 
-rm $PBS_O_WORKDIR/tmp/*
+#rm $PBS_O_WORKDIR/tmp/*
 
 }
 
@@ -435,16 +439,19 @@ fi
 #tests for ortho indels ped and map fiels and runs above commands if it doesn't exist
 if [ -s $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_indels.ped ]; then
     echo -e "Generating indel ped file\n"
+	echo -e "WARNING Generate PLINK script currently doesn't support the inclusion of a reference file in the GWAS output for indels\n"
     GenerateIndelPed
 fi
 
 if [ -s $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_indels.map ]; then
     echo -e "Generating indel map file\n"
+	echo -e "WARNING Generate PLINK script currently doesn't support the inclusion of a reference file in the GWAS output for indels\n"
 	GenerateIndelMap
 fi
 
 if [ -s $PBS_O_WORKDIR/Outputs/Comparative/Bedcov_merge.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/PA_matrix.ped ]; then
     echo -e "Generating PA ped and map file\n"
+	echo -e "WARNING Generate PLINK script currently doesn't support the inclusion of a reference file in the GWAS output for PA analysis\n"
     GeneratePAPed
 fi
 
@@ -460,4 +467,3 @@ echo -e "Happy GWAing...\n"
 echo -e "-----------------------------\n"
 
 exit 0
-
