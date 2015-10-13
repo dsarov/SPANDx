@@ -129,7 +129,7 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     taxa=`cat merge.012.indv.trans`
     grid=`cat t3`
    #nexus creation for PAUP
-    echo -e "\n#nexus\nbegin data;\ndimensions ntax=$y nchar=$x;\nformat symbols=\"AGCT\" gap=. datatype=nucleotide transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > Ortho_SNP_matrix.nex
+    echo -e "\n#nexus\nbegin data;\ndimensions ntax=$y nchar=$x;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > Ortho_SNP_matrix.nex
 	mv $PBS_O_WORKDIR/Phylo/out/Ortho_SNP_matrix.nex $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex
 fi
 if [ ! -s $PBS_O_WORKDIR/Phylo/out/Phylo_RAxML.nex -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix_RAxML.nex ]; then 
@@ -162,7 +162,7 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex -a "$indel_merge" 
     taxa=`cat merge.012.indv.trans`
     grid=`cat t3`
    #nexus creation for PAUP
-    echo -e "\n#nexus\nbegin data;\ndimensions ntax=$y nchar=$x;\nformat symbols=\"AGCT\" gap=. datatype=nucleotide transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > indel_matrix.nex
+    echo -e "\n#nexus\nbegin data;\ndimensions ntax=$y nchar=$x;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > indel_matrix.nex
     mv $PBS_O_WORKDIR/Phylo/indels/out/indel_matrix.nex $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex
 fi
 

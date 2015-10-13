@@ -134,13 +134,15 @@ if [ "$tech" == Illumina -o "$tech" == Illumina_old ]; then
 	fi
     if [ "$pairing" == PE ]; then
 	    if [ ! -s "$BAM_UNIQUE_FILE.bam" -a ! -s "$GATK_REALIGNED_BAM" ]; then
-            log_eval $PBS_O_WORKDIR "$BWA sampe -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA\n@HD\tVN:1.0\tSO:coordinate\n@PG\tID:BWA\tPN:BWA\tVN:0.5.9' $REF_FILE $SAI1 $SAI2 $READ1_FILE $READ2_FILE > $SAM"
+            log_eval $PBS_O_WORKDIR "$BWA sampe -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $SAI2 $READ1_FILE $READ2_FILE > $SAM"
+        # There is an error with the above readgroup formatting for version >1.0 of samtools
             log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
         fi
 	fi
 	if [ "$pairing" == SE ]; then 
 	    if [ ! -s "$BAM_UNIQUE_FILE.bam" -a ! -s "$GATK_REALIGNED_BAM" ]; then
-            log_eval $PBS_O_WORKDIR "$BWA samse -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA\n@HD\tVN:1.0\tSO:coordinate\n@PG\tID:BWA\tPN:BWA\tVN:0.5.9' $REF_FILE $SAI1 $READ1_FILE > $SAM"
+            log_eval $PBS_O_WORKDIR "$BWA samse -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $READ1_FILE > $SAM"
+           # There is an error with the above readgroup formatting for version >1.0 of samtools
             log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
         fi
 	fi	
