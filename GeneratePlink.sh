@@ -415,7 +415,7 @@ paste -d ' ' chr_PA locs_PA locs_col3_4_PA locs_col3_4_PA > PA_matrix.map
 mv PA_matrix.ped $PBS_O_WORKDIR/Outputs/Comparative/PA_matrix.ped
 mv PA_matrix.map $PBS_O_WORKDIR/Outputs/Comparative/PA_matrix.map
 
-#rm $PBS_O_WORKDIR/tmp/*
+rm $PBS_O_WORKDIR/tmp/*
 
 }
 
