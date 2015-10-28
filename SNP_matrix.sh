@@ -245,7 +245,22 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_SNPs_annotated.txt -a "$annotat
 
 	#replace SNP information i.e. 1/1, 1/2 etc with 0123 matrix
 	
-	awk ' { for (i=1; i<=NF; i++) {if ($i == "1/1") $i=2; if ($i == "./.") $i="."; if ($i == "0/0") $i=0; if ($i == "0/1") $i="?"; if ($i == "2/2") $i="3"; if ($i == "1/2") $i="?"; if ($i == "0/2") $i="?"; if ($i == "2/1") $i="?"}}; {print $0} ' out.snps.clean > out.matrix
+	awk ' { for (i=1; i<=NF; i++) 
+		{if ($i == "1/1") $i=2; 
+		 if ($i == "./.") $i="."; 
+		 if ($i == "0/0") $i=0; 
+		 if ($i == "0/1") $i="?"; 
+		 if ($i == "2/2") $i="3"; 
+		 if ($i == "1/2") $i="?"; 
+		 if ($i == "0/2") $i="?";
+		 if ($i == "2/1") $i="?";
+		 if ($i == "3/3") $i="4";
+		 if ($i == "0/3") $i="?";
+		 if ($i == "1/3") $i="?";
+		 if ($i == "2/3") $i="?";
+		 if ($i == "3/2") $i="?";	
+		 if ($i == "3/1") $i="?"}}; 
+		{print $0} ' out.snps.clean > out.matrix
 
 	#add the reference SNP call to each line and remove spaces to create the 012.mrg for the final matrix
 	sed -i -e 's/^/0 /' out.matrix
@@ -368,6 +383,8 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_indels_annotated.txt -a "$annot
     
 
     #replace SNP information i.e. 1/1, 1/2 etc with 0123 matrix and convert to tab separated
+	#This section will still have issues with triallelic calls
+	
     awk ' { for (i=1; i<=NF; i++) {if ($i == "1/1") $i="2"; if ($i == "./.") $i="."; if ($i == "0/0") $i="0"; if ($i == "0/1") $i="?"; if ($i == "2/2") $i="3"; if ($i == "1/2") $i="?"; if ($i == "2/1") $i="?"; if ($i == "0/2") $i="?"}}; {print $0} ' out.indels.clean > out.matrix
 	
 	
@@ -447,8 +464,6 @@ if [ -s $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex ]; then
 	[ -f $PBS_O_WORKDIR/Phylo/indels/out/merge.012.trans.top_rem ] && rm $PBS_O_WORKDIR/Phylo/indels/out/merge.012.trans.top_rem
 	[ -f $PBS_O_WORKDIR/Phylo/indels/out/merge.012.pos_merged ] && rm $PBS_O_WORKDIR/Phylo/indels/out/merge.012.pos_merged
 fi
-
-##final move of files
 
 
 echo "SPANDx has finished"
