@@ -231,8 +231,8 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_SNPs_annotated.txt -a "$annotat
 	##parse out base information
 	awk '{print $4, $5 }' out.vcf.headerless > bases.raw
 	sed -i 's/,/ /g' bases.raw
-	sed -i 's/$/ N/' bases.raw
-	cut -d " " -f -3 bases.raw > bases.raw.parsed
+	sed -i 's/$/ N N/' bases.raw
+	cut -d " " -f -4 bases.raw > bases.raw.parsed
 	sed -i 's/ /\t/g' bases.raw.parsed
 		
 		
@@ -272,12 +272,15 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_SNPs_annotated.txt -a "$annotat
 	
     paste -d "\t" bases.raw.parsed out.matrix > bases.tab
 	
-
 	#replace 012 matrix with base calls
-	awk '  { for (i=3; i<=NF; i++) {if ($i == 0) $i=$1; if ($i == 2) $i=$2; if ($i == 3) $i=$3 }}; {print $0} ' bases.tab > bases.tab.tmp
+	awk '  { for (i=4; i<=NF; i++) 
+	       {if ($i == 0) $i=$1; 
+		    if ($i == 2) $i=$2;
+            if ($i == 3) $i=$3;			
+			if ($i == 4) $i=$4 }}; {print $0} ' bases.tab > bases.tab.tmp
 	
 	## removes temp columns for final base call file
-	cut -d " " -f 4- bases.tab.tmp > bases.mrg
+	cut -d " " -f 5- bases.tab.tmp > bases.mrg
 
 	## paste all temp .mrg files into a headerless effects file
 	paste -d " " out.pos.mrg bases.mrg 012.mrg effects.mrg > headerless.effects.mrg
@@ -370,22 +373,43 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_indels_annotated.txt -a "$annot
     ##parse out base information
     awk ' {print $4, $5 }' out.vcf.headerless > bases.raw
 	sed -i 's/,/ /g' bases.raw
-	sed -i 's/$/ N/' bases.raw
-	cut -d " " -f -3 bases.raw > bases.raw.parsed
+	sed -i 's/$/ N N N N N N N/' bases.raw
+	cut -d " " -f -9 bases.raw > bases.raw.parsed
 	sed -i 's/ /\t/g' bases.raw.parsed
 
     #-------------------------------------
-    # print just the SNP/genomic information column 10 until the end
+    # print just the indel information column 10 until the end
     cut -f 10- out.vcf.headerless > out.indels.raw
 
 	#cleanup the raw indel output to just contain the 1/1, 1/2 etc vcf file calls
     awk ' {for (i=1; i<=NF; i++) { $i=(substr($i, 1, 3))}; print $0 }' out.indels.raw > out.indels.clean
     
 
-    #replace SNP information i.e. 1/1, 1/2 etc with 0123 matrix and convert to tab separated
+    #replace indel information i.e. 1/1, 1/2 etc with 0123 matrix and convert to tab separated
 	#This section will still have issues with triallelic calls
 	
-    awk ' { for (i=1; i<=NF; i++) {if ($i == "1/1") $i="2"; if ($i == "./.") $i="."; if ($i == "0/0") $i="0"; if ($i == "0/1") $i="?"; if ($i == "2/2") $i="3"; if ($i == "1/2") $i="?"; if ($i == "2/1") $i="?"; if ($i == "0/2") $i="?"}}; {print $0} ' out.indels.clean > out.matrix
+    awk ' { for (i=1; i<=NF; i++) 
+	      {if ($i == "1/1") $i="2"; 
+		  else if ($i == "./.") $i="."; 
+		  else if ($i == "0/0") $i="0"; 
+		  else if ($i == "0/1") $i="?"; 
+		  else if ($i == "2/2") $i="3"; 
+		  else if ($i == "1/2") $i="?"; 
+		  else if ($i == "2/1") $i="?"; 
+		  else if ($i == "0/2") $i="?";
+		  else if ($i == "3/3") $i="4";
+		  else if ($i == "0/3") $i="?";
+		  else if ($i == "1/3") $i="?";
+		  else if ($i == "2/3") $i="?";
+		  else if ($i == "3/2") $i="?";	
+		  else if ($i == "3/1") $i="?";
+		  else if ($i == "4/4") $i="?";
+		  else if ($i == "5/5") $i="?";
+		  else if ($i == "6/6") $i="?";
+		  else if ($i == "7/7") $i="?";
+		  else if ($i == "8/8") $i="?";
+		  else if ($i == "9/9") $i="?";
+		   else $i="?"}}; {print $0} ' out.indels.clean > out.matrix
 	
 	
 	
@@ -399,9 +423,20 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_indels_annotated.txt -a "$annot
     # merge base calls and 012 matrix 
     paste -d "\t" bases.raw.parsed out.matrix > bases.tab
     #replace 012 matrix with base calls
-    awk ' { for (i=3; i<=NF; i++) {if ($i == 0) $i=$1; if ($i == 2) $i=$2; if ($i == 3) $i=$3 }}; {print $0} ' bases.tab > bases.mrg.tmp
+    awk ' { for (i=9; i<=NF; i++) 
+	{if ($i == 0) $i=$1; 
+	 if ($i == 2) $i=$2; 
+	 if ($i == 3) $i=$3;
+	 if ($i == 4) $i=$4;
+	 if ($i == 5) $i=$5;
+	 if ($i == 6) $i=$6;
+	 if ($i == 7) $i=$7;
+	 if ($i == 8) $i=$8;
+	 if ($i == 9) $i=$9}}; {print $0} ' bases.tab > bases.mrg.tmp
+	 
+	 
     ## removes temp columns for final base call file
-    cut -d " " -f 4- bases.mrg.tmp > bases.mrg
+    cut -d " " -f 10- bases.mrg.tmp > bases.mrg
 
     ## paste all temp .mrg files into a headerless effects file
     paste -d " " out.pos.mrg bases.mrg 012.mrg effects.mrg > headerless.effects.mrg
