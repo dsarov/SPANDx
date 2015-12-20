@@ -425,7 +425,15 @@ if [ "$annotate" == yes ]; then
 		echo -e "Please change the names of the reference file to match those in the SnpEff database.\n"
 		echo -e "If you are unsure what these are, run: $JAVA -jar $SNPEFF dump $variant_genome\n"
 		echo -e "The first chromosome name is $CHR_NAME.\n\n"
-		exit 1
+                echo -e "If you choose to continue the annotation component of SPANDx may fail.\n"
+                echo -e "Do you want to continue?\n"
+                echo -e "Type Y to continue or anything else to exit\n"
+                read ref_test
+                if [ "$ref_test" == "Y" -o "$ref_test" == "y" -o "$ref_test" == "yes" ]; then
+                   echo -e "Continuing\n\n"
+                else
+                   exit 1
+                fi
 	fi	
 	
 	
