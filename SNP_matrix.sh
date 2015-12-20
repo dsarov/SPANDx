@@ -403,13 +403,12 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_indels_annotated.txt -a "$annot
 		  else if ($i == "2/3") $i="?";
 		  else if ($i == "3/2") $i="?";	
 		  else if ($i == "3/1") $i="?";
-		  else if ($i == "4/4") $i="?";
-		  else if ($i == "5/5") $i="?";
-		  else if ($i == "6/6") $i="?";
-		  else if ($i == "7/7") $i="?";
-		  else if ($i == "8/8") $i="?";
-		  else if ($i == "9/9") $i="?";
-		   else $i="?"}}; {print $0} ' out.indels.clean > out.matrix
+		  else if ($i == "4/4") $i="5";
+		  else if ($i == "5/5") $i="6";
+		  else if ($i == "6/6") $i="7";
+		  else if ($i == "7/7") $i="8";
+		  else if ($i == "8/8") $i="9";
+		  else $i="?"}}; {print $0} ' out.indels.clean > out.matrix
 	
 	
 	
