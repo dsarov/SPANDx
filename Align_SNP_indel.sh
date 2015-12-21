@@ -135,17 +135,17 @@ if [ "$tech" == Illumina -o "$tech" == Illumina_old ]; then
     if [ "$pairing" == PE ]; then
 	    if [ ! -s "$BAM_UNIQUE_FILE.bam" -a ! -s "$GATK_REALIGNED_BAM" ]; then
             log_eval $PBS_O_WORKDIR "$BWA sampe -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $SAI2 $READ1_FILE $READ2_FILE > $SAM"
-            log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort -o ${BAM_UNIQUE_FILE}.bam"
+            log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
         fi
 	fi
 	if [ "$pairing" == SE ]; then 
 	    if [ ! -s "$BAM_UNIQUE_FILE.bam" -a ! -s "$GATK_REALIGNED_BAM" ]; then
             log_eval $PBS_O_WORKDIR "$BWA samse -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $READ1_FILE > $SAM"
-            log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort -o ${BAM_UNIQUE_FILE}.bam"
+            log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
         fi
 	fi	
     if [ ! -s "$BAM_UNIQUE_INDEX_FILE" -a ! -s "$GATK_REALIGNED_BAM" ]; then
-        log_eval $PBS_O_WORKDIR "$SAMTOOLS index ${BAM_UNIQUE_FILE}.bam"
+        log_eval $PBS_O_WORKDIR "$SAMTOOLS index $BAM_UNIQUE_FILE"
     fi
 fi
 
@@ -176,7 +176,7 @@ if [ ! -s "$UNMAPPED.bam" -a -s "$SAM" ]; then
     log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -f 4 -F 264 $SAM > $TMP_BAM1"
     log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -f 8 -F 260 $SAM > $TMP_BAM2"
     log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -f 12 -F 256 $SAM > $TMP_BAM3"
-    log_eval $PBS_O_WORKDIR "$SAMTOOLS merge -u - $TMP_BAM1 $TMP_BAM2 $TMP_BAM3 | $SAMTOOLS sort -n -o $UNMAPPED.bam"
+    log_eval $PBS_O_WORKDIR "$SAMTOOLS merge -u - $TMP_BAM1 $TMP_BAM2 $TMP_BAM3 | $SAMTOOLS sort -n - $UNMAPPED.bam"
 fi
 ### cleanup ###
 if [ -s "$SAM" -a -s "$UNMAPPED.bam" ]; then
