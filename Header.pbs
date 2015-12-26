@@ -1,10 +1,11 @@
 #!/bin/bash
-
+#PBS -S /bin/sh
+#PBS -o logs/
 #$ -cwd
 #$ -S /bin/bash
 #$ -j y
 
-#PBS -S /bin/sh
+
 
 if [ ! $PBS_O_WORKDIR ]
     then
