@@ -1,5 +1,6 @@
 #!/bin/bash
 #PBS -S /bin/sh
+#PBS -o logs/Alignment_${seq}.txt
 #$ -S /bin/bash
 #$ -cwd
 
