@@ -397,6 +397,9 @@ fi
 if [ ! -d "Outputs/Comparative" ]; then
 	mkdir $seq_directory/Outputs/Comparative
 fi
+if [ ! -d "logs" ]; then
+	mkdir $seq_directory/logs
+fi
 
 ## checking variables for the annotation module
 
