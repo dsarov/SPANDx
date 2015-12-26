@@ -1,6 +1,7 @@
 #!/bin/bash
 #$ -S /bin/bash
 #PBS -S /bin/sh
+#PBS -o logs/BedCov_merge.txt
 #$ -cwd
 
 
