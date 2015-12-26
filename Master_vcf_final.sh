@@ -1,6 +1,7 @@
 #!/bin/bash
 #$ -S /bin/bash
 #PBS -S /bin/sh
+#PBS -o logs/Master_VCF_final.txt
 #$ -cwd
 
 # Version history
