@@ -176,7 +176,7 @@ if [ ! -s "$UNMAPPED.bam" -a -s "$SAM" ]; then
     log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -f 4 -F 264 $SAM > $TMP_BAM1"
     log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -f 8 -F 260 $SAM > $TMP_BAM2"
     log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -f 12 -F 256 $SAM > $TMP_BAM3"
-    log_eval $PBS_O_WORKDIR "$SAMTOOLS merge -u - $TMP_BAM1 $TMP_BAM2 $TMP_BAM3 | $SAMTOOLS sort -n - $UNMAPPED.bam"
+    log_eval $PBS_O_WORKDIR "$SAMTOOLS merge -u - $TMP_BAM1 $TMP_BAM2 $TMP_BAM3 | $SAMTOOLS sort -n - $UNMAPPED"
 fi
 ### cleanup ###
 if [ -s "$SAM" -a -s "$UNMAPPED.bam" ]; then
