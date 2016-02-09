@@ -203,8 +203,8 @@ while getopts "$OPTSTRING" SWITCH; do
 		   ;;
 		   
 		*) echo "script error: unhandled argument"
-           exit 1
-		   usage
+           usage
+		   exit 1
 		   ;;
 		   
 		
@@ -671,13 +671,13 @@ if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_ma
     qsub_cat_ids=`cat clean_vcf_id.txt | cut -f2 | sed -e 's/^/:/' | tr -d '\n'` 
     depend="-W depend=afterok${qsub_cat_ids}"
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUTPUT -m $MAIL -M $ADDRESS -l ncpus=1,walltime=$WALL_T,pmem=$PBS_MEM "$depend" -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "Matrix_vcf\t$qsub_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUTPUT -m $MAIL -M $ADDRESS -l ncpus=1,walltime=$WALL_T,pmem=$PBS_MEM -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "Matrix_vcf\t$qsub_matrix_id" >> matrix_id.txt
 fi
@@ -777,13 +777,13 @@ if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_ma
     qsub_cat_ids=`cat clean_vcf_id.txt | cut -f2 | sed -e 's/^/:/' | tr -d '\n'` 
     depend="-W depend=afterok${qsub_cat_ids}"
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUTPUT -m $MAIL -M $ADDRESS -l ncpus=1,walltime=$WALL_T,pmem=$PBS_MEM "$depend" -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "Matrix_vcf\t$qsub_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUTPUT -m $MAIL -M $ADDRESS -l ncpus=1,walltime=$WALL_T,pmem=$PBS_MEM -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "Matrix_vcf\t$qsub_matrix_id" >> matrix_id.txt
 fi
@@ -1014,13 +1014,13 @@ if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_ma
     qsub_cat_ids=`cat clean_vcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
     depend="-hold_jid ${qsub_cat_ids}"
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$qsub_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$qsub_matrix_id" >> matrix_id.txt
 fi
@@ -1120,13 +1120,13 @@ if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_ma
     qsub_cat_ids=`cat clean_vcf_id.txt | cut -f3 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
     depend="-hold_jid ${qsub_cat_ids}"
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT $depend -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$qsub_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting qsub job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	qsub_matrix_id=`qsub -N Matrix_vcf -j $ERROR_OUT_SGE -m $MAIL -M $ADDRESS -l h_rt=$H_RT -v "$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$qsub_matrix_id" >> matrix_id.txt
 fi
@@ -1355,13 +1355,13 @@ if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_ma
     sbatch_cat_ids=`cat clean_vcf_id.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
     depend="--depend=afterok:${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf --mem=$SLURM_MEM --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting sbatch job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf --mem=$SLURM_MEM --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
@@ -1459,13 +1459,13 @@ if [ -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_ma
     sbatch_cat_ids=`cat clean_vcf_id.txt | cut -f4 -d ' ' | sed -e 's/$/,/' | tr -d '\n' | sed -e 's/,$//'`
     depend="--depend=afterok:${sbatch_cat_ids}"
     echo -e "Submitting sbatch job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf --mem=$SLURM_MEM --mail-type=$MAIL_SLURM --time=$TIME $depend --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Submitting sbatch job for creation of SNP array\n"
-    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge"
+    var="ref=$ref,seq_path=$seq_directory,variant_genome=$variant_genome,annotate=$annotate,SCRIPTPATH=$SCRIPTPATH,indel_merge=$indel_merge,tri_tetra_allelic=$tri_tetra_allelic"
 	sbatch_matrix_id=`sbatch --job-name=Matrix_vcf --mem=$SLURM_MEM --mail-type=$MAIL_SLURM --time=$TIME --export="$var" "$SCRIPTPATH"/SNP_matrix.sh`
 	echo -e "$sbatch_matrix_id" >> matrix_id.txt
 fi
@@ -1628,7 +1628,7 @@ fi
 
 if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Running job for creation of SNP array\n"
-    export ref=$ref seq_path=$seq_directory variant_genome=$variant_genome annotate=$annotate SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge
+    export ref=$ref seq_path=$seq_directory variant_genome=$variant_genome annotate=$annotate SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge tri_tetra_allelic=$tri_tetra_allelic
 	"$SCRIPTPATH"/SNP_matrix.sh	
 fi
 }
@@ -1680,7 +1680,7 @@ fi
 #####################
 if [ ! -s clean_vcf_id.txt -a ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
     echo -e "Running job for creation of SNP array\n"
-    export ref=$ref seq_path=$seq_directory variant_genome=$variant_genome annotate=$annotate SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge
+    export ref=$ref seq_path=$seq_directory variant_genome=$variant_genome annotate=$annotate SCRIPTPATH=$SCRIPTPATH indel_merge=$indel_merge tri_tetra_allelic=$tri_tetra_allelic
 	"$SCRIPTPATH"/SNP_matrix.sh
 fi
 }
