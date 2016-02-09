@@ -120,7 +120,7 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix.nex ]; then
 ## filter vcf positions for those present in the final 012 matrix and output only those lines
     awk 'FNR==NR{ a[$1]=$0;next } ($1 in a)' merge.012.pos_merged vcf.pos.alleles.AGCT > filtered.pos.AGCT
 ## merge the 012 matrix
-    paste filtered.pos.AGCT merge.012.trans.top_rem > pos.alleles.AGCT.012 #this file should be included in the annotated output at a later date
+    paste filtered.pos.AGCT merge.012.trans.top_rem > pos.alleles.AGCT.012 
 #remove 1 and -1
     grep -v ' 1' <pos.alleles.AGCT.012 | grep -v ' -1' | sed '/\t-1/d' | sed '/\t1/d' >t1
     awk '  { for (i=4; i<=NF; i++) {if ($i == 0) $i=$2; if ($i == 2) $i=$3 }}; {print $0} ' t1 > t2 
@@ -142,6 +142,56 @@ if [ ! -s $PBS_O_WORKDIR/Phylo/out/Phylo_RAxML.nex -a ! -s $PBS_O_WORKDIR/Output
 	echo -e "$y $x\n$taxa_and_grid" > Ortho_SNP_matrix_RAxML.nex
 	mv $PBS_O_WORKDIR/Phylo/out/Ortho_SNP_matrix_RAxML.nex $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix_RAxML.nex
 fi	
+
+############################
+## construct a SNP matrix including tri and tetra allelic SNPs
+
+if [ $tri_tetra_allelic == yes ]; then
+    cd $PBS_O_WORKDIR/Phylo/out/
+	grep -v '#' out.vcf | grep -v '\./\.' | grep -v '0/1' | grep -v '0/2' | grep -v '0/3'| grep -v '1/2' | grep -v '1/3'| grep -v '2/3' >headerless_vcf
+
+	
+	#replace genotype calls with nucleotide information
+	
+   awk '  { for (i=10; i<=NF; i++) 
+           { if ($i ~ /0\/0/) $i=$4; 
+            if ($i ~ /1\/1/) $i=substr($5, 1, 1);
+            if ($i ~ /2\/2/) $i=substr($5, 3, 1);
+            if ($i ~ /3\/3/) $i=substr($5, 5, 1);
+             }}
+            {print $0} ' headerless_vcf > clean.out.tri_allelic.vcf
+
+
+    grep '#CHROM' out.vcf > simple.header
+	
+	cat clean.out.tri_allelic.vcf | awk '{print $4}' > ref_column
+	
+	#PAUP nex file
+	
+	awk '{print $1,$2}' clean.out.tri_allelic.vcf | sed 's/ /_/' > locations
+	cat clean.out.tri_allelic.vcf | cut -d' ' -f10- | sed 's/ /\t/g' >calls
+	paste locations ref_column calls > matrix
+	grid=`cat matrix`
+    x=`cat clean.out.tri_allelic.vcf | wc -l` #nchars
+    y=`cat merge.012.indv.ref | wc -l` #ntaxa
+    taxa=`cat merge.012.indv.trans`
+    
+    echo -e "\n#nexus\nbegin data;\ndimensions ntax=$y nchar=$x;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > Ortho_SNP_matrix_poly_allelic.nex
+    mv $PBS_O_WORKDIR/Phylo/out/Ortho_SNP_matrix_poly_allelic.nex $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix_poly_allelic.nex
+	
+	#RAXML
+	
+	awk 'BEGIN {FS=" "; OFS=""}{for (i=2;i<=NF;i++){arr[NR,i]=$i; if(big <= NF) big=NF;}}END {for(i=2;i<=big;i++){for(j=1;j<=NR;j++){printf("%s%s",arr[j,i],(j==NR?"":OFS));} print "";}}' matrix > matrix_RAXML
+	paste merge.012.indv.ref matrix_RAXML > t5
+	taxa_and_grid=`cat t5`
+	echo -e "$y $x\n$taxa_and_grid" > Ortho_SNP_matrix_poly_allelic_RAxML.nex
+	mv $PBS_O_WORKDIR/Phylo/out/Ortho_SNP_matrix_poly_allelic_RAxML.nex $PBS_O_WORKDIR/Outputs/Comparative/Ortho_SNP_matrix_poly_allelic_RAxML.nex
+	
+	rm matrix matrix_RAXML
+	
+	
+fi
+
 
 ##################indels ##############
 if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex -a "$indel_merge" == yes ]; then
@@ -325,6 +375,10 @@ if [ ! -s $PBS_O_WORKDIR/Outputs/Comparative/All_indels_annotated.txt -a "$annot
 	
 	
 	#SnpEff version control. Versions post 4.1 use a slightly different format for variants
+	
+	
+	
+
 	
 	SnpEff_version=`($JAVA $SET_VAR $SNPEFF -h 2>&1 | head -n1 |awk '{ print $4 }' | awk '{print substr($1,0,3)}' | bc)`
 	if [ "$(echo $SnpEff_version '>=' 4.1 | bc -l)" -eq 1 ]; then
