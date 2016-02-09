@@ -3,7 +3,7 @@ SPANDx - a genomics pipeline for comparative analysis of large haploid whole gen
 
 *****SPANDx now works with SLURM, SGE and PBS (Torque) resource managers (v2.7+) *****
 
-SPANDx can also be run directly without a resource handler (set scheduler=NONE) although this is not recommended
+SPANDx can also be run directly without a resource handler (set SCHEDULER=NONE in scheduler.config) although this is not recommended
 
 USAGE: SPANDx.sh 
 <parameters, required> 
