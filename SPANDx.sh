@@ -41,26 +41,26 @@ help()
 {
 usage
 cat << _EOF_ 
+
 Thanks for using SPANDx!!
+
 SPANDx requires a reference in FASTA format and for this to be specified with the -r flag. Please do not include the .fasta extension in the reference name.
+
+FASTA files should conform to the specifications listed here: http://www.ncbi.nlm.nih.gov/BLAST/blastcgihelp.shtml. Some programs used within SPANDx do not allow the use of IUPAC codes and these should not be used in reference FASTA files.
+
 To output a merged SNP file for phylogenetic reconstruction, set the -m flag to yes.
 
-By default the program will process all sequence data in the present working directory.
-SPANDx by default expects reads to be paired end, Illumina data and named in the following format: STRAIN_1_sequence.fastq.gz for the first pair and STRAIN_2_sequence.fastq.gz for the second pair.
-Reads not in this format will be ignored by SPANDx.
-If you do not have paired end data you must set the -p flag to SE to denote single end reads. By default -p is set to PE or paired end.
+By default, SPANDx will process all sequence data in the present working directory.
 
-SPANDx expects a reference file in FASTA format.
-FASTA files should conform to the specifications listed here: http://www.ncbi.nlm.nih.gov/BLAST/blastcgihelp.shtml
-Some programs used within SPANDx do not allow the use of IUPAC codes and these should not be used in reference FASTA files
+By default, SPANDx expects reads to be paired-end (PE) Illumina data, named in the following format: STRAIN_1_sequence.fastq.gz for the first pair and STRAIN_2_sequence.fastq.gz for the second pair. Reads not in this format will be ignored by SPANDx.
 
-Sequences will be aligned against the reference using BWA, SNPs and indels will be called with GATK and a SNP matrix will be generated with GATK and VCFTools.
-For a more detailed description of how to use SPANDx and its capability, refer to the SPANDx manual and/or the BMC Research Notes publication 
+If you do not have PE data, you must set the -p flag to SE to denote single-end reads. By default, -p is set to PE.
 
+Sequences will be aligned against the reference using BWA. SNPs and indels will be called with GATK and a SNP matrix will be generated with GATK and VCFTools.
 
-If you have any questions, requests or issues with SPANDx, please send an e-mail to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au
+For a more detailed description of how to use SPANDx and its capability, refer to the SPANDx manual or the BMC Research Notes publication. If you have any questions, requests or issues with SPANDx, please send an e-mail to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au.
 
-If you use SPANDx in published work please cite - SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618
+If you use SPANDx in published work please cite it!: SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618
 
 _EOF_
 
