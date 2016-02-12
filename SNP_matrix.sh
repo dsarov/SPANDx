@@ -555,8 +555,15 @@ if [ -s $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex ]; then
 fi
 
 # run summary script
+### run summary script
 
-$SCRIPTPATH/Summary.sh $PBS_O_WORKDIR 
+
+$SCRIPTPATH/Summary.sh $PBS_O_WORKDIR $ref $SAMTOOLS
+
+
+##need to copy master.vcf and out.vcf
+
+
 
 echo "SPANDx has finished"
 
