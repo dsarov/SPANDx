@@ -554,6 +554,9 @@ if [ -s $PBS_O_WORKDIR/Outputs/Comparative/indel_matrix.nex ]; then
 	[ -f $PBS_O_WORKDIR/Phylo/indels/out/merge.012.pos_merged ] && rm $PBS_O_WORKDIR/Phylo/indels/out/merge.012.pos_merged
 fi
 
+# run summary script
+
+$SCRIPTPATH/Summary.sh $PBS_O_WORKDIR 
 
 echo "SPANDx has finished"
 
