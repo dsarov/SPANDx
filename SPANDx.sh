@@ -186,9 +186,9 @@ while getopts "$OPTSTRING" SWITCH; do
 		   
 		z) tri_tetra_allelic="$OPTARG"
            if [ "$tri_tetra_allelic" == yes -o "$tri_tetra_allelic" == no ]; then
-               echo -e "tri- and tetra-allelic SNPs will be included in the phylogenetic analyses\n"  
+               echo -e "Tri- and tetra-allelic SNPs will be included in the phylogenetic analyses\n"  
 		   else
-		       echo -e "tri- and tetra-allelic SNPs (-z) must be set to yes or no. Please refer to the manual for more details\n"
+		       echo -e "Tri- and tetra-allelic SNPs (-z) must be set to yes or no. Please refer to the manual for more details\n"
 			   exit 1
 		   fi
            ;;
