@@ -14,9 +14,11 @@ USAGE: SPANDx.sh
 -i [generate indel matrix yes/no] 
 -a [include annotation yes/no] 
 -v [Variant genome file. Name must match the SnpEff database] 
--s [Specify read prefix to run single strain or none to construct a SNP matrix from a previous analysis ] 
+-s [Specify read prefix to run single strain] 
 -t [Sequencing technology used Illumina/Illumina_old/454/PGM] 
--p [Pairing of reads PE/SE] -w [Window size in base pairs for BEDcoverage module]
+-p [Pairing of reads PE/SE] 
+-w [Window size in base pairs for BEDcoverage module]
+-z [include tri- and tetra-allelic SNPs in the SNP matrix]
 
 SPANDx by default expects reads to be paired end, Illumina data in the format: STRAIN_1_sequence.fastq.gz for the first pair and STRAIN_2_sequence.fastq.gz for the second pair. 
 Reads not in this format will be ignored.
