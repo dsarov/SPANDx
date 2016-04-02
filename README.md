@@ -18,7 +18,7 @@ USAGE: SPANDx.sh
 -t [Sequencing technology used Illumina/Illumina_old/454/PGM] 
 -p [Pairing of reads PE/SE] 
 -w [Window size in base pairs for BEDcoverage module]
--z [include tri- and tetra-allelic SNPs in the SNP matrix]
+-z [include tri- and tetra-allelic SNPs in the SNP matrix yes/no]
 
 SPANDx by default expects reads to be paired end, Illumina data in the format: STRAIN_1_sequence.fastq.gz for the first pair and STRAIN_2_sequence.fastq.gz for the second pair. 
 Reads not in this format will be ignored.
