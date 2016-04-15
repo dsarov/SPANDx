@@ -44,6 +44,7 @@ All variants identified in the single genome analysis are merged and re-verified
 Finally, SPANDx merges high-quality, re-verified SNP and indel variants into user-friendly .nex matrices, which can be used for phylogenetic resconstruction using various phylogenetics tools (e.g. PAUP, PHYLIP, RAxML).
 
 SPANDx was written by: Dr Derek Sarovich and Dr Erin Price, Menzies School of Health Research, Darwin, NT, Australia.
+
 Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au.
-The citation for SPANDx is: 
-"SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618".
+
+The citation for SPANDx is: "Sarovich DS, Price EP. 2014. SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets. <i>BMC Res Notes</i> 7:618".
