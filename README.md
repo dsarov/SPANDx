@@ -1,12 +1,12 @@
 # SPANDx
 SPANDx - a genomics pipeline for comparative analysis of large haploid whole-genome re-sequencing datasets
 
-*****SPANDx now works with SLURM, SGE and PBS (Torque) resource managers (v2.7+)*****
+<b>SPANDx now works with SLURM, SGE and PBS (Torque) resource managers (v2.7+)</b>
 
 SPANDx can also be run directly without a resource handler (set SCHEDULER=NONE in scheduler.config), although this is not recommended.
 
 
-<i>WHY USE SPANDx?</i>
+<i>Why use SPANDx?</i>
 
 SPANDx is your one-stop tool for identifying SNP and indel variants in haploid genomes using NGS data. SPANDx performs alignment of raw NGS reads against your chosen reference genome or pan-genome, followed by accurate variant calling and annotation, and locus presence/absence determination. SPANDx produces handy SNP and indel matrices for downstream phylogenetic analyses. Annotated, genome-wide SNPs and indels are identified and output in human-readable format. A presence/absence matrix is also generated to allow you to identify the core/accessory genome content across all your genomes.
 
