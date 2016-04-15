@@ -39,7 +39,7 @@ By default, all reads in SPANDx format (i.e. strain_1_sequence.fastq.gz) in the 
 Sequence files are aligned against the reference using BWA. Alignments are subsequently filtered and converted using SAMtools and Picard Tools.
 SNPs and indels are identified with GATK and coverage assessed with BEDtools. 
 
-All variants identified in the single genome analysis are merged and re-verified across the entire dataset to minimise incorrect variant calls. This error-correction step is an attempt at establishing a "Best Practice" guideline for datasets where variant recalibration is not possible due to a lack of comprehensive quality-assessed variants (i.e. most haploid datasets!). Such datasets are available for certain eukaryotic species (e.g. human, mouse genomes), as detailed in GATK "Best Practice" guidelines.
+All variants identified in the single genome analysis are merged and re-verified across the entire dataset to minimise incorrect variant calls. This error-correction step is an attempt at establishing a "Best Practice" guideline for datasets where variant recalibration is not yet possible due to a lack of comprehensive quality-assessed variants (i.e. most haploid datasets!). Such datasets are available for certain eukaryotic species (e.g. human, mouse genomes), as detailed in GATK "Best Practice" guidelines.
 
 Finally, SPANDx merges high-quality, re-verified SNP and indel variants into user-friendly .nex matrices, which can be used for phylogenetic resconstruction using various phylogenetics tools (e.g. PAUP, PHYLIP, RAxML).
 
