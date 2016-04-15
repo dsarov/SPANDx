@@ -41,7 +41,7 @@ USAGE: SPANDx.sh
 -w [Window size in base pairs for BEDcoverage module]
 -z [include tri- and tetra-allelic SNPs in the SNP matrix yes/no]
 
-<i>Important things you need to know about SPANDx</i>
+<i>What are the inmportant things I need to know about SPANDx?</i>
 
 SPANDx, by default, expects reads to be paired-end, Illumina data in the following format: STRAIN_1_sequence.fastq.gz (first pair) and STRAIN_2_sequence.fastq.gz (second pair). 
 Reads not in this format will be ignored.
@@ -62,7 +62,7 @@ Finally, SPANDx merges high-quality, re-verified SNP and indel variants into use
 
 <i>Who created SPANDx?</i>
 
-SPANDx was written by Dr Derek Sarovich and Dr Erin Price, Menzies School of Health Research, Darwin, NT, Australia.
+SPANDx was written by Derek Sarovich (@DerekSarovich) and Erin Price (@Dr_ErinPrice) at Menzies School of Health Research, Darwin, NT, Australia.
 
 <i>What to do if I run into issues with SPANDx?</i>
 
