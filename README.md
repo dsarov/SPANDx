@@ -47,4 +47,4 @@ SPANDx was written by: Dr Derek Sarovich and Dr Erin Price, Menzies School of He
 
 Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au.
 
-SPANDx citation: Sarovich DS, Price EP. 2014. SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets. <i>BMC Res Notes</i> 7:618.
+SPANDx citation: Sarovich DS & Price EP. 2014. SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets. <i>BMC Res Notes</i> 7:618.
