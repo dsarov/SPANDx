@@ -2,7 +2,7 @@
 
 <i>What is SPANDx?</i>
 
-SPANDx (Synergised Pipeline for Analysis of NGS Data in Linux) is a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets. 
+SPANDx (Synergised Pipeline for Analysis of NGS Data in Linux) is a genomics pipeline for comparative analysis of haploid whole genome re-sequencing datasets. 
 
 <i>Why use SPANDx?</i>
 
