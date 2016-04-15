@@ -62,7 +62,7 @@ Finally, SPANDx merges high-quality, re-verified SNP and indel variants into use
 
 <i>Who created SPANDx?</i>
 
-SPANDx was written by Derek Sarovich [@DerekSarovich](https://twitter.com/DerekSarovich) and Erin Price [@Dr_ErinPrice](https://twitter.com/Dr_ErinPrice) at Menzies School of Health Research, Darwin, NT, Australia.
+SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/DerekSarovich)) and Erin Price ([@Dr_ErinPrice](https://twitter.com/Dr_ErinPrice)) at Menzies School of Health Research, Darwin, NT, Australia.
 
 <i>What to do if I run into issues with SPANDx?</i>
 
