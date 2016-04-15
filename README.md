@@ -45,5 +45,5 @@ Finally, SPANDx merges high-quality, re-verified SNP and indel variants into use
 
 SPANDx was written by: Dr Derek Sarovich and Dr Erin Price, Menzies School of Health Research, Darwin, NT, Australia.
 Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au.
-If you find SPANDx useful and use it in published work, please cite! 
+The citation for SPANDx is: 
 "SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618".
