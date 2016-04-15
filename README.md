@@ -31,7 +31,7 @@ Reads not in this format will be ignored.
 If your data are not paired, you must set the -p parameter to SE to denote unpaired reads. By default -p is set to PE.
 
 SPANDx requires a reference file in FASTA format. 
-For compatibility with all steps in SPANDx, FASTA files should conform to the specifications listed here: http://www.ncbi.nlm.nih.gov/BLAST/blastcgihelp.shtml
+For compatibility with all steps in SPANDx, FASTA files should conform to the specifications listed here: http://www.ncbi.nlm.nih.gov/BLAST/blastcgihelp.shtml.
 Note that the use of nucleotides other than A, C, G, or T is not supported by certain programs in SPANDx so should not be used in reference FASTA files. 
 In addition, Picard, GATK and SAMtools handle spaces within contig names differently. Therefore, please do not use spaces or special characters (e.g. $/*) in contig names.
 
@@ -43,7 +43,7 @@ All variants identified in the single genome analysis are merged and re-verified
 
 Finally, SPANDx merges high-quality, re-verified SNP and indel variants into user-friendly .nex matrices, which can be used for phylogenetic resconstruction using various phylogenetics tools (e.g. PAUP, PHYLIP, RAxML).
 
-SPANDx was written by: Dr Derek Sarovich and Dr Erin Price, Menzies School of Health Research, Darwin, NT, Australia
-Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au
+SPANDx was written by: Dr Derek Sarovich and Dr Erin Price, Menzies School of Health Research, Darwin, NT, Australia.
+Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au.
 If you find SPANDx useful and use it in published work, please cite! 
 "SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618".
