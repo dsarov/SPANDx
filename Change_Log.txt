@@ -38,3 +38,6 @@ SPANDx3.0
 - Better handling of tetra-allelic SNPs and indels. Indels now call up to nine variants at each locus
 - Generation of PLINK inputs now works with the annotated SNP outputs to include non-orthologous regions
 - Increased compatibility with Samtools versions. SPANDx should work with version 0.1.18 through 1.2. Version 1.3 will cause SPANDx to fail and should not be used
+
+SPANDx3.1.1
+- fixed an issue with variable assignment in qsub when running on older TORQUE/PBS systems
