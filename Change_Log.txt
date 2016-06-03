@@ -41,3 +41,6 @@ SPANDx3.0
 
 SPANDx3.1.1
 - fixed an issue with variable assignment in qsub when running on older TORQUE/PBS systems
+
+SPANDx3.1.1
+- fixed an issue with the tri/tetra-allelic matrix including mixed SNP calls
