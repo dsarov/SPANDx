@@ -41,6 +41,7 @@ done
   
 cat SNP_summary_header ${sequences[@]/%/.summary} > Outputs/Single_sample_summary.txt
 
+rm SNP_summary_header
 rm ${sequences[@]/%/.summary} 
 
 exit 0
