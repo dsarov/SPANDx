@@ -146,7 +146,7 @@ fi
 ############################
 ## construct a SNP matrix including tri and tetra allelic SNPs
 
-if [ $tri_tetra_allelic == yes ]; then
+if [ "$tri_tetra_allelic" == "yes" ]; then
     cd $PBS_O_WORKDIR/Phylo/out/
 	grep -v '#' out.vcf | grep -v '\./\.' | grep -v '0/1' | grep -v '0/2' | grep -v '0/3' | grep -v '1/2' | grep -v '1/3' | grep -v '2/3' | grep -v '2/1' | grep -v '1/0' | grep -v '2/0' | grep -v '3/0' | grep -v '3/1' | grep -v '3/2' >headerless_vcf
 
