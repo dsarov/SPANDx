@@ -41,7 +41,7 @@ USAGE: SPANDx.sh
 -w [Window size in base pairs for BEDcoverage module]
 -z [include tri- and tetra-allelic SNPs in the SNP matrix yes/no]
 
-<i>What are the inmportant things I need to know before running SPANDx?</i>
+<i>What are the important things I need to know before running SPANDx?</i>
 
 SPANDx, by default, expects reads to be paired-end, Illumina data in the following format: STRAIN_1_sequence.fastq.gz (first pair) and STRAIN_2_sequence.fastq.gz (second pair). 
 Reads not in this format will be ignored.
