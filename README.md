@@ -16,7 +16,7 @@ From v2.7 onwards, SPANDx  works with SLURM, SGE and PBS (Torque) resource manag
 
 To achieve high-quality variant calls, SPANDx incorporates the following programs into its workflow:
 
-<b>- Burrows Wheeler Aligner (BWA)</b>
+<b>- Burrows Wheeler Aligner (BWA)</b>\n
 <b>- SAMTools</b>
 <b>- Picard</b>
 <b>- Genome Analysis Toolkit (GATK)</b>
