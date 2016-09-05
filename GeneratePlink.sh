@@ -282,16 +282,34 @@ unset $inGroupArray
 unset $outGroupArray
 
 
+#read genome list for arrays
+#assign in group and out group in what will become column 6
+
 inGroupArrayTmp=(`cat $PBS_O_WORKDIR/$inGroup`)
 outGroupArrayTmp=(`cat $PBS_O_WORKDIR/$outGroup`)
 inGroupArray=("${inGroupArrayTmp[@]/%/ 0 0 0 2}")
 outGroupArray=("${outGroupArrayTmp[@]/%/ 0 0 0 1}")
 ped_array=("${outGroupArray[@]}" "${inGroupArray[@]}")
 
+#Look for CRLF line breaks in incorrectly formatted reference files and attempts to fix formatting
 
-#read genome list for arrays
-#assign in group and out group in what will become column 6
+grep -U $'\015' "$inGroup" &> /dev/null
+status=$?
+if [ $status == 0 ]; then
+  echo -e "File looks to be windows formatted with CRLF breaks. Attempting to convert\n"
+   tr -d '\015' < "$inGroup" > ${inGroup}.tmp
+   mv ${inGroup}.tmp "$inGroup"
+   rm ${inGroup}.tmp
+fi
 
+grep -U $'\015' "$outGroup" &> /dev/null
+status=$?
+if [ $status == 0 ]; then
+  echo -e "File looks to be windows formatted with CRLF breaks. Attempting to convert\n"
+   tr -d '\015' < "$outGroup" > ${outGroup}.tmp
+   mv ${outGroup}.tmp "$outGroup"
+   rm ${outGroup}.tmp
+fi
 
 
 #Genome inclusion test
