@@ -66,7 +66,7 @@ The main comparative outputs of SPANDx (SNP matrix, indel matrix, presence/absen
 
 Comparing microbial genomes with the above methods will test for associations with orthologous and non-orthologous SNPs and indels and a rudimentary presence/absence analysis. For more thorough GWAS the accessory genome also needs to be taken into account and is a non-trivial matter in microbes due to the presence of multiple paralogs. To accurately characterise the accessory genome an accurate pan-genome is required. To construct a pan-genome we recommend the excellent pan-genome software, Roary (https://sanger-pathogens.github.io/Roary/). Once a pan-genome has been created the script GeneratePLINK_Roary.sh can be used to analyse associations between the groups of interest. GeneratePLINK_Roary.sh is run similarly to GeneratePLINK.sh and requires both an ingroup.txt file and an outgroup.txt file. Once this script has been run the .ped and .map files should be directly importable into PLINK.
 
-#Note that this script has an additional requirement for R and Rscript with the dplyr package installed. If this script can’t find these programs in your path then it will fail. 
+<b>Note that this script has an additional requirement for R and Rscript with the dplyr package installed. If this script can’t find these programs in your path then it will fail. </b>
 
 <i>Who created SPANDx?</i>
 
