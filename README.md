@@ -72,7 +72,7 @@ Comparing microbial genomes with the above methods will test for associations wi
 
 GeneratePLINK_Roary.sh usage:
 
-GeneratePLINK.sh -i ingroup.txt -o outgroup.txt 
+GeneratePLINK_Roary.sh -i ingroup.txt -o outgroup.txt 
 
 <b>Note that this script has an additional requirement for R and Rscript with the dplyr package installed. If this script can’t find these programs in your path then it will fail. </b>
 
