@@ -1,5 +1,3 @@
-#!/bin/sh
-
 #generate PLINK files for Roary output
 
 
@@ -10,12 +8,9 @@ help() {
 cat << _EOF_
 
 The script should be run as follows
-GeneratePLINK_BSR.sh ingroupfile.txt outgroupfile.txt BSRmatrix BSR_cutoff_value (between 0 and 1)
+GeneratePLINK_Roary.sh -i ingroupfile.txt -o outgroupfile.txt -r Roary_output (assumed to be gene_presence_absence.csv by default)
 
-Note that this script can take the output of either Roary or LS-BSR as input
-If you DO NOT supply a BSR_cutoff_value the script will assume you have used Roary as input.
-Roary by default uses a BLAST score of ~90 as a presence abscence cutoff. Please change settings in Roary if this is unsuitable
-
+This script will convert the output of Roary to PLINK format for microbial Genome Wide Association
 
 _EOF_
 
@@ -24,10 +19,14 @@ _EOF_
 
 
 
-#R=/usr/local/R_v3.2.2/lib64/R/bin/Rscript
 
-#LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/dsarovich/.linuxbrew/lib/
+##PATH=/usr/local/R_v3.2.2/lib64/R/bin/:$PATH #specific for Cheetah HPC 
 
+
+
+if [ ! $PBS_O_WORKDIR ]; then
+        PBS_O_WORKDIR="$PWD"
+fi
 
 if  [ $# -lt 1 ]
     then
@@ -80,6 +79,7 @@ done
 
 
 
+
 if [ ! -s "$inGroup" ]; then
     help
 	echo -e "\nScript must be supplied with a specified list of inGroup strains\n"
@@ -97,6 +97,13 @@ if [ ! -s "$outGroup" ]; then
 	else
 	echo -e "The following file has been specified as the outGroup list \n\n$outGroup\n"
 fi
+
+if [ -s "$ROARY_FILE" ]; then
+    echo -e "Found pangenome file\n"
+	else
+    echo -e "Couldn't find pangenome file. Exiting\n"
+	exit 1
+fi	
 
 unset inGroupArrayTmp
 unset outGroupArrayTmp
@@ -154,40 +161,34 @@ if [ $n2 == 0 ]; then
         exit 1
 fi
 
-
-
-#test if BedCutoff is null if this variable is not provided then input is assumed to be Roary input
-if [ -z "$BedCutoff" ]; then
-
   echo -e "Generating PLINK input files from Roary output\n"
 
 ## To do: because the Roary output includes the core genome we should remove all core regions present in every single strain.
 ## Removal of the core region will prevent the Bonferroni correction being overly harsh with our significance testing
 ##create input from Roary output
   for (( i=0; i<n1; i++ )); do
-	grep \"${inGroupArrayTmp[i]}\" "$matrix" &> /dev/null
+	grep \"${inGroupArrayTmp[i]}\" "$ROARY_FILE" &> /dev/null
 	status=$?
     if [ ! $status == 0 ]; then
         echo "I couldn't find all in group strains in the comparative SNPs files" 
 		echo "Please check that all genome names are spelt correctly and are included in the analysis"
 		echo "The first offending genome I encountered was ${inGroupArrayTmp[i]} but there may be others"
 		exit 1
-		else
-		echo -e "Found all ingroup strains\n"
 	fi
-  done	
+  done
+  echo -e "Found all ingroup strains\n"  
   for (( i=0; i<n2; i++ )); do
-      grep \"${outGroupArrayTmp[i]}\" "$matrix" &> /dev/null
+      grep \"${outGroupArrayTmp[i]}\" "$ROARY_FILE" &> /dev/null
       status=$?
       if [ ! $status == 0 ]; then
         echo "I couldn't find all out group strains in the comparative SNPs files" 
         echo "Please check that all genome names are spelt correctly and are included in the analysis"
         echo "The first offending genome I encountered was ${outGroupArrayTmp[i]} but there may be others"
         exit 1
-		else 
-		echo -e "Found all outgroup strains\n" 
-      fi 
+	   fi     
   done
+  echo -e "Found all outgroup strains\n"
+  
   grep -w ${inGroupArrayTmp[i]} ${outGroup} &> /dev/null
   status=$?
   if [ $status == 0 ]; then
@@ -197,14 +198,11 @@ if [ -z "$BedCutoff" ]; then
 	else
 	echo -e "No duplicates in the ingroup or outgroup files, good\n"
   fi
- 
-
-  
-  
+   
   echo -e "Creating R script\n"
  
   cat << '_EOF_' >> Recode_Roary.R
-#!usr/bin/env Rscript 
+#!/usr/bin/env Rscript 
 
 getArgs <- function(verbose=FALSE, defaults=NULL) {
   myargs <- gsub("^--","",commandArgs(TRUE))
@@ -273,9 +271,9 @@ _EOF_
   
   echo -e "Rscript created. Recoding Roary matrix\n"
 
-  echo "$PBS_O_WORKDIR/Recode_Roary.R --no-save --no-restore --args matrix=$matrix output=$PBS_O_WORKDIR/strain.data.trans.txt"
+  echo "$PBS_O_WORKDIR/Recode_Roary.R --no-save --no-restore --args matrix=$ROARY_FILE output=$PBS_O_WORKDIR/strain.data.trans.txt"
   
-  $PBS_O_WORKDIR/Recode_Roary.R --no-save --no-restore --args matrix=$matrix output=$PBS_O_WORKDIR/strain.data.trans.txt
+  $PBS_O_WORKDIR/Recode_Roary.R --no-save --no-restore --args matrix=$ROARY_FILE output=$PBS_O_WORKDIR/strain.data.trans.txt
   
   printf "%s\n" "${ped_array[@]}" > temp.col
   awk '{print $1, $1, $2, $3, $4, $5 }' temp.col > genomes
@@ -303,5 +301,10 @@ _EOF_
   
   rm *.tmp *.PA tmp chromosome genes_PA PA.mrg temp.col genomes.mrg genomes strain.data.trans.txt Recode_Roary.R
   
+ # $plink --file Roary_matrix --make-bed --out Roary --allow-no-sex --allow-extra-chr
+  #$plink --bfile Roary --assoc --adjust --out asPresenceAbsence --allow-no-sex --allow-extra-chr
+  
+  
+  #skipped pdf file creation for Roary pangenome. Need to correctly handle location of region in the creation of the BP file
   
 exit 0
