@@ -286,7 +286,7 @@ _EOF_
   paste genomes.mrg PA.mrg > Roary_matrix.ped
   
   #mapfile
-  awk 'BEGIN {FS=","} { print $1 }' "$matrix"  | tail -n +2 | sed 's/ //g' | sed 's/"//g' > genes_PA
+  awk 'BEGIN {FS=","} { print $1 }' "$ROARY_FILE"  | tail -n +2 | sed 's/ //g' | sed 's/"//g' > genes_PA
   lines=`wc -l genes_PA | awk '{ print $1 }'`
   #echo $lines
 
