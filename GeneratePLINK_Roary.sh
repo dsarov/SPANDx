@@ -167,7 +167,7 @@ fi
 ## Removal of the core region will prevent the Bonferroni correction being overly harsh with our significance testing
 ##create input from Roary output
   for (( i=0; i<n1; i++ )); do
-	grep \"${inGroupArrayTmp[i]}\" "$ROARY_FILE" &> /dev/null
+	head -n1 "$matrix" | egrep "\""${inGroupArrayTmp[i]}"\"" &> /dev/null
 	status=$?
     if [ ! $status == 0 ]; then
         echo "I couldn't find all in group strains in the comparative SNPs files" 
@@ -178,7 +178,7 @@ fi
   done
   echo -e "Found all ingroup strains\n"  
   for (( i=0; i<n2; i++ )); do
-      grep \"${outGroupArrayTmp[i]}\" "$ROARY_FILE" &> /dev/null
+      head -n1 "$matrix" | grep "\""${outGroupArrayTmp[i]}"\"" &> /dev/null
       status=$?
       if [ ! $status == 0 ]; then
         echo "I couldn't find all out group strains in the comparative SNPs files" 
@@ -246,7 +246,7 @@ print(output)
 #load roary into R
 library("dplyr")
 
-my.data <- read.csv(matrix, stringsAsFactors=F, na.strings="")
+my.data <- read.csv(matrix, stringsAsFactors=F, check.names = FALSE, na.strings="")
 
 strain.sub <- select(my.data, -c(1:14))
 
