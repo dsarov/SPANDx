@@ -127,7 +127,6 @@ if [ $status == 0 ]; then
   echo -e "File looks to be windows formatted with CRLF breaks. Attempting to convert\n"
    tr -d '\015' < "$inGroup" > ${inGroup}.tmp
    mv ${inGroup}.tmp "$inGroup"
-   rm ${inGroup}.tmp
 fi
 
 grep -U $'\015' "$outGroup" &> /dev/null
@@ -136,7 +135,6 @@ if [ $status == 0 ]; then
   echo -e "File looks to be windows formatted with CRLF breaks. Attempting to convert\n"
    tr -d '\015' < "$outGroup" > ${outGroup}.tmp
    mv ${outGroup}.tmp "$outGroup"
-   rm ${outGroup}.tmp
 fi
   
   
