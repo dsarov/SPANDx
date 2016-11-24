@@ -82,7 +82,7 @@ SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/Derek
 
 <i>What to do if I run into issues with SPANDx?</i>
 
-Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@menzies.edu.au.
+Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@gmail.com.
 
 <i>How do I cite SPANDx?</i>
 
