@@ -135,14 +135,20 @@ if [ "$tech" == Illumina -o "$tech" == Illumina_old ]; then
 	fi
     if [ "$pairing" == PE ]; then
 	    if [ ! -s "$BAM_UNIQUE_FILE.bam" -a ! -s "$GATK_REALIGNED_BAM" ]; then
-            #log_eval $PBS_O_WORKDIR "$BWA sampe -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $SAI2 $READ1_FILE $READ2_FILE > $SAM"
-            log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
+            
+	    #removed for new BWA
+	    #log_eval $PBS_O_WORKDIR "$BWA sampe -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $SAI2 $READ1_FILE $READ2_FILE > $SAM"
+            	    
+	    log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
         fi
 	fi
 	if [ "$pairing" == SE ]; then 
 	    if [ ! -s "$BAM_UNIQUE_FILE.bam" -a ! -s "$GATK_REALIGNED_BAM" ]; then
-            log_eval $PBS_O_WORKDIR "$BWA samse -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $READ1_FILE > $SAM"
-            log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
+            
+	    #removed for new BWA
+	    #log_eval $PBS_O_WORKDIR "$BWA samse -r '@RG\tID:${org}\tSM:${seq}\tPL:ILLUMINA' $REF_FILE $SAI1 $READ1_FILE > $SAM"
+                
+	    log_eval $PBS_O_WORKDIR "$SAMTOOLS view -h -b -S -q 1 $SAM | $SAMTOOLS sort - $BAM_UNIQUE_FILE"
         fi
 	fi	
     if [ ! -s "$BAM_UNIQUE_INDEX_FILE" -a ! -s "$GATK_REALIGNED_BAM" ]; then
