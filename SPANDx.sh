@@ -280,6 +280,7 @@ if [ "$BWA_VERSION" -lt 7 ]; then
 	echo "As of SPANDx version 3.2, this pipeline only works with versions of bwa > v0.7 as we have switched to the bwa mem"
 	echo "algorithm for reproducability. If you want to use an older version of bwa and the sampe/aln algorithm please use a version of SPANDx "
 	echo "pre v 3.2"
+	exit 1
 fi
 
 rm bwa_temp.txt
