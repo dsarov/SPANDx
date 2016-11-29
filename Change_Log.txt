@@ -44,3 +44,6 @@ SPANDx3.1.1
 
 SPANDx3.1.2
 - fixed an issue with the tri/tetra-allelic matrix including mixed SNP calls
+
+SPANDx3.2
+- Updated to bwa mem algorithm (v0.7+) for improved SNP calling, especially between closely related species
