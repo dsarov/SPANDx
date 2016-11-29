@@ -1,6 +1,6 @@
 # SPANDx
 
-## As of version 3.2 we've updated to version 0.7+ of BWA mem alignment algorithm. This algorithm provides improved intraspecies SNP/indel identification and will be used as default with SPANDx. If you would like to use a pre 0.7 version of bwa please use a version of SPANDx pre v3.2
+## As of version 3.2 we've updated to version 0.7+ of BWA mem alignment algorithm. This algorithm provides improved intraspecies SNP/indel identification and will be used as default with SPANDx post v3.2. If you would like to use a pre 0.7 version of bwa please use a version of SPANDx pre v3.2
 
 <i>What is SPANDx?</i>
 
