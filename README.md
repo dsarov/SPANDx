@@ -4,6 +4,7 @@
 
 ###N.B. We haven't yet upgraded the pipeline for really old Illumina data (pre 1.3 quality encoding). This will be implemented soon.
 
+
 <i>What is SPANDx?</i>
 
 SPANDx (Synergised Pipeline for Analysis of NGS Data in Linux) is a genomics pipeline for comparative analysis of haploid whole genome re-sequencing datasets. 
