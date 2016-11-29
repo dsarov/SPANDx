@@ -1,5 +1,7 @@
 # SPANDx
 
+## As of version 3.2 we've updated to version 0.7+ of the bwa mem algorithm. This algorith provides improved intraspecies SNP/indel identification and will be used as default with SPANDx. If you would like to use a pre 0.7 version of bwa please use a version of SPANDx pre v3.2
+
 <i>What is SPANDx?</i>
 
 SPANDx (Synergised Pipeline for Analysis of NGS Data in Linux) is a genomics pipeline for comparative analysis of haploid whole genome re-sequencing datasets. 
