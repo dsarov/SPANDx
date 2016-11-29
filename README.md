@@ -1,4 +1,4 @@
-# SPANDx
+# SPANDx - a comparative genomics pipeline for microbes
 
 ## As of SPANDx version 3.2 we've upgraded to BWA-mem alignment (BWA v0.7+). This algorithm provides improved intraspecies SNP/indel identification and will be used as default for SPANDx versions post v3.2. If you would like to use a pre 0.7 version of bwa with the aln/sampe algorithm, please use a version of SPANDx pre v3.2. All version are available on sourceforge https://sourceforge.net/projects/spandx/
 
