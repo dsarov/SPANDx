@@ -22,7 +22,6 @@ git clone https://github.com/dsarov/SPANDx.git
 2) Change into the SPANDx directory and alter file permissions
 
 cd SPANDx/
-
 chmod +x ./*
 
 3) Download and install the GATK. Copy or link GATK into the SPANDx directory. Note that due licensing restrictions GATK is not included in the SPANDx bundle
