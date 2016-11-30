@@ -15,18 +15,21 @@ SPANDx is your one-stop tool for identifying SNP and indel variants in haploid g
 
 <i>How to install SPANDx from github</i>
 
-1)Download the latest installation with git clone
+1) Download the latest installation with git clone
+
 git clone https://github.com/dsarov/SPANDx.git
 
-2)Change into the SPANDx directory and alter file permissions
+2) Change into the SPANDx directory and alter file permissions
+
 cd SPANDx/
+
 chmod +x ./*
 
-3)Download and install the GATK. Copy or link GATK into the SPANDx directory. Note that due licensing restrictions GATK is not included in the SPANDx bundle
+3) Download and install the GATK. Copy or link GATK into the SPANDx directory. Note that due licensing restrictions GATK is not included in the SPANDx bundle
 
-4)Change the install location in the SPANDx.config file to direct SPANDx to its dependencies. Make sure that you have selected the correct resource manager for your system (see below).
+4) Change the install location in the SPANDx.config file to direct SPANDx to its dependencies. Make sure that you have selected the correct resource manager for your system (see below).
 
-5)SPANDx should now be good to go!
+5) SPANDx should now be good to go!
 
 <i>What resource managers can SPANDx use?</i>
 
