@@ -27,7 +27,7 @@ chmod +x ./*
 
 3) Download and install the GATK. Copy or link GATK into the SPANDx directory. Note that due licensing restrictions GATK is not included in the SPANDx bundle
 
-4) Change the install location in the SPANDx.config file to direct SPANDx to its dependencies. Make sure that you have selected the correct resource manager for your system (see below).
+4) Change the install location in the SPANDx.config file to direct SPANDx to its dependencies. Make sure that you have selected the correct resource manager for your system in the scheduler.config file (see below).
 
 5) SPANDx should now be good to go!
 
