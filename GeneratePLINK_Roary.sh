@@ -165,7 +165,7 @@ fi
 ## Removal of the core region will prevent the Bonferroni correction being overly harsh with our significance testing
 ##create input from Roary output
   for (( i=0; i<n1; i++ )); do
-	head -n1 "$matrix" | egrep "\""${inGroupArrayTmp[i]}"\"" &> /dev/null
+	head -n1 "$ROARY_FILE" | egrep "\""${inGroupArrayTmp[i]}"\"" &> /dev/null
 	status=$?
     if [ ! $status == 0 ]; then
         echo "I couldn't find all in group strains in the comparative SNPs files" 
@@ -176,7 +176,7 @@ fi
   done
   echo -e "Found all ingroup strains\n"  
   for (( i=0; i<n2; i++ )); do
-      head -n1 "$matrix" | grep "\""${outGroupArrayTmp[i]}"\"" &> /dev/null
+      head -n1 "$ROARY_FILE" | grep "\""${outGroupArrayTmp[i]}"\"" &> /dev/null
       status=$?
       if [ ! $status == 0 ]; then
         echo "I couldn't find all out group strains in the comparative SNPs files" 
