@@ -270,7 +270,7 @@ _EOF_
   sort -d genomes > genomes.mrg
   awk '{ print $1 }' genomes | while read f; do grep -P "^$f\t" strain.data.trans.txt > $f.PA; done;
   for f in *.PA ; do cut -d$'\t' -f2- $f > $f.tmp; done;
-  for f in *.PA.tmp; do sed -i 's/./& &\t/g' $f; done;
+  for f in *.PA.tmp; do sed -i 's/1\|2/&&/g' $f; done;
   PA_Array=(`ls *.PA.tmp`)
   cat ${PA_Array[@]} > PA.mrg
   paste genomes.mrg PA.mrg > Roary_matrix.ped
