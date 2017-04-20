@@ -16,21 +16,13 @@ _EOF_
 
 }
 
-
-
-
-
-##PATH=/usr/local/R_v3.2.2/lib64/R/bin/:$PATH #specific for Cheetah HPC 
-
-
-
 if [ ! $PBS_O_WORKDIR ]; then
         PBS_O_WORKDIR="$PWD"
 fi
 
 if  [ $# -lt 1 ]
     then
-	    usage
+	    help
 		exit 1
 fi
 
@@ -293,11 +285,11 @@ _EOF_
      echo -e "1\t$pos" >> chromosome
   done
 
-  paste -d ' ' genes_PA chromosome > tmp
+  paste -d ' ' genes_PA chromosome > tmp.merge
 
-  awk 'BEGIN {FS=OFS=" "} {print $2, $1, $3, $3}' tmp > Roary_matrix.map
+  awk 'BEGIN {FS=OFS=" "} {print $2, $1, $3, $3}' tmp.merge > Roary_matrix.map
   
-  rm *.tmp *.PA tmp chromosome genes_PA PA.mrg temp.col genomes.mrg genomes strain.data.trans.txt Recode_Roary.R
+  rm tmp.merge *.PA.* chromosome genes_PA PA.mrg temp.col genomes.mrg genomes strain.data.trans.txt Recode_Roary.R
   
  # $plink --file Roary_matrix --make-bed --out Roary --allow-no-sex --allow-extra-chr
   #$plink --bfile Roary --assoc --adjust --out asPresenceAbsence --allow-no-sex --allow-extra-chr
