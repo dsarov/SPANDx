@@ -179,7 +179,7 @@ fi
   done
   echo -e "Found all outgroup strains\n"
   
-  grep -w ${inGroupArrayTmp[i]} ${outGroup} &> /dev/null
+  grep -w "${inGroupArrayTmp[i]}" "${outGroup}" &> /dev/null
   status=$?
   if [ "$status" == 0 ]; then
 	echo "There appears to be duplicate genome names in the input files i.e. One genome was found in both the ingroup and outgroup file. Please correct and rerun"
