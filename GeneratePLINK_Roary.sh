@@ -145,7 +145,7 @@ fi
 
 n2=${#outGroupArrayTmp[@]}
 
-if [ $n2 == 0 ]; then
+if [ "$n2" == 0 ]; then
         echo -e "Program couldn't find any genomes in the in group file"
         echo -e "Please check that genomes have been listed in this file and the file is in the correct format"
         exit 1
@@ -159,7 +159,7 @@ fi
   for (( i=0; i<n1; i++ )); do
 	head -n1 "$ROARY_FILE" | egrep "\""${inGroupArrayTmp[i]}"\"" &> /dev/null
 	status=$?
-    if [ ! $status == 0 ]; then
+    if [ ! "$status" == 0 ]; then
         echo "I couldn't find all in group strains in the comparative SNPs files" 
 		echo "Please check that all genome names are spelt correctly and are included in the analysis"
 		echo "The first offending genome I encountered was ${inGroupArrayTmp[i]} but there may be others"
@@ -170,7 +170,7 @@ fi
   for (( i=0; i<n2; i++ )); do
       head -n1 "$ROARY_FILE" | grep "\""${outGroupArrayTmp[i]}"\"" &> /dev/null
       status=$?
-      if [ ! $status == 0 ]; then
+      if [ ! "$status" == 0 ]; then
         echo "I couldn't find all out group strains in the comparative SNPs files" 
         echo "Please check that all genome names are spelt correctly and are included in the analysis"
         echo "The first offending genome I encountered was ${outGroupArrayTmp[i]} but there may be others"
@@ -181,7 +181,7 @@ fi
   
   grep -w ${inGroupArrayTmp[i]} ${outGroup} &> /dev/null
   status=$?
-  if [ $status == 0 ]; then
+  if [ "$status" == 0 ]; then
 	echo "There appears to be duplicate genome names in the input files i.e. One genome was found in both the ingroup and outgroup file. Please correct and rerun"
 	echo "The first duplicate name encountered was ${inGroupArrayTmp[i]}"
     exit 1
