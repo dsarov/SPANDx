@@ -1,7 +1,6 @@
 # SPANDx - a comparative genomics pipeline for microbes
 
-SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/DerekSarovich)) and Erin Price ([@Dr_ErinPrice](https://twitter.com/Dr_ErinPrice)) at Menzies School of Health Research, Darwin, NT, Australia.
-
+SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/DerekSarovich)) and Erin Price ([@Dr_ErinPrice](https://twitter.com/Dr_ErinPrice)) at University of the Sunshine Coast, Queensland, Australia.
 ## Contents
 
 - [Updates](updates)
