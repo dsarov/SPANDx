@@ -47,3 +47,6 @@ SPANDx3.1.2
 
 SPANDx3.2
 - Updated to bwa mem algorithm (v0.7+) for improved SNP calling, especially between closely related species
+
+SPANDx3.3_dev
+- fixed a read sorting error due to bash array sorting priority. Closely related read names should be better handled in this version
