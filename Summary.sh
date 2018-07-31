@@ -33,7 +33,7 @@ for (( i=0; i<n; i++ )); do
   indel_PASS_count=$(cat Outputs/SNPs_indels_PASS/${sequences[$i]}.indels.PASS.vcf | grep -v '#' | wc -l)
   indel_FAIL_count=$(cat Outputs/SNPs_indels_FAIL/${sequences[$i]}.indels.FAIL.vcf | grep -v '#' | wc -l)
   Avg_cov=$(cat ${sequences[$i]}/unique/${sequences[$i]}.sample_summary | awk '{print $3}' | head -n2 | tail -n1)
-  Mapped_reads=$($SAMTOOLS idxstats ${sequences[$i]}/unique/${sequences[$i]}.realigned.bam | awk '{ print $3 }' | head -n1)
+  Mapped_reads=$($SAMTOOLS stats ${sequences[$i]}/unique/${sequences[$i]}.realigned.bam | grep 'reads mapped:' | awk '{ print $4 }')
   
   echo -e "${sequences[$i]}\t$SNP_PASS_count\t$SNP_FAIL_count\t$indel_PASS_count\t$indel_FAIL_count\t$Avg_cov\t$Mapped_reads" > ${sequences[$i]}.summary
   
