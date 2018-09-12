@@ -35,12 +35,25 @@
 #################################################################
 usage()
 {
-echo -e  "USAGE: SPANDx.sh <parameters, required> -r <reference, without .fasta extension> [parameters, optional] -o [organism] -m [generate SNP matrix yes/no] -i [generate indel matrix yes/no] -a [include annotation yes/no] -v [Variant genome file. Name must match the SnpEff database] -s [Specify read prefix to run single strain or none to just construct SNP matrix] -t [Sequencing technology used Illumina/Illumina_old/454/PGM] -p [Pairing of reads PE/SE] -w [BEDTools window size in base pairs] -z [include tri-allelic and tetra-allelic SNPs yes/no]"
+echo -e  "Thanks for using SPANDx v3.2
+Usage:
+   SPANDx.sh -r <reference, without .fasta extension>
+Optional Parameter:
+  -o       Organism
+  -m       Generate SNP matrix (yes/no)
+  -i       Generate indel matrix (yes/no)
+  -a       Include annotation (yes/no)
+  -v       Variant genome file. Name must match the SnpEff database
+  -s       Specify read prefix to run single strain or none to just construct SNP matrix
+  -t       Sequencing technology used Illumina/Illumina_old/454/PGM
+  -p       Pairing of reads (PE/SE)
+  -w       BEDTools window size in base pairs
+  -z       Include tri-allelic and tetra-allelic SNPs (yes/no)\n"
 }
 help()
 {
 usage
-cat << _EOF_ 
+cat << _EOF_
 
 Thanks for using SPANDx!!
 
