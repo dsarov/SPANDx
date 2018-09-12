@@ -139,4 +139,4 @@ GeneratePLINK_Roary.sh -i ingroup.txt -o outgroup.txt -r Roary.csv output (if di
 
 Sarovich DS & Price EP. 2014. SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets. <i>BMC Res Notes</i> 7:618.
 
-Please send bug reports to mshr.bioinformatics@gmail.com or derek.sarovich@gmail.com.
+Please send bug reports to derek.sarovich@gmail.com.
