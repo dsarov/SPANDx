@@ -44,16 +44,13 @@ git clone https://github.com/dsarov/SPANDx.git
 chmod +x ./*
 ```
 
-3) Download and install the GATK. Copy or link GATK into the SPANDx directory. 
-*Note: Due licensing restrictions GATK is not included in the SPANDx bundle*
-
 **Optional for GWAS** 
 
-4) Download and install PLINK and Roary if you would like to use the GWAS ability of SPANDx.
+3) Download and install PLINK and Roary if you would like to use the GWAS ability of SPANDx.
 
-5) Change the install location in the SPANDx.config file to direct SPANDx to its dependencies. Make sure that you have selected the correct resource manager for your system in the scheduler.config file (see below).
+4) Change the install location in the SPANDx.config file to direct SPANDx to its dependencies. Make sure that you have selected the correct resource manager for your system in the scheduler.config file (see below).
 
-6) SPANDx should now be good to go!
+5) SPANDx should now be good to go!
 
 ## Resource Managers
 
