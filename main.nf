@@ -60,7 +60,7 @@ Optional Parameters:
   --window       Default window size used in the bedcov coverage assessment
                  (default: 1kb)
 
-                 Currently phylogeny is set to $params.window
+                 Currently window is set to $params.window
 
   --size         ARDaP can optionally down-sample your read data to
                  run through the pipeline quicker. Set to 0 to skip downsampling
@@ -71,12 +71,12 @@ Optional Parameters:
   --tri_allelic  Set to true if you would like tri-allelic SNPs/indels used
                  in the phylogenetic analysis (default: false)
 
-                 Currently phylogeny is set to $params.tri_allelic
+                 Currently tri_allelic is set to $params.tri_allelic
 
   --indels       Set to true if you would like indels used
                  in the phylogenetic analysis (default: false)
 
-                 Currently phylogeny is set to $params.indels
+                 Currently indels is set to $params.indels
 
 If you want to make changes to the default `nextflow.config` file
 clone the workflow into a local directory and change parameters
@@ -103,7 +103,11 @@ snpeff=params.annotation
 
 fastq = Channel
   .fromFilePairs("${params.fastq}", flat: true)
-	.ifEmpty { exit 1, "Input read files could not be found." }
+	.ifEmpty { exit 1, "Input read files could not be found.
+  Have you included the read files in the current directory and do they have the correct naming?
+  With the parameters specified SPANDx is looking for reads named $params.fastq
+  To fix this error either rename your reads to match this formatting or specify the desired format
+  when initializing SPANDx e.g. --fastq *_{1,2}_sequence.fastq.gz)" }
 
 reference_file = file(params.ref)
 if( !reference_file.exists() ) {
