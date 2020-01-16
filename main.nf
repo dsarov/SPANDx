@@ -2,9 +2,9 @@
 
 /*
  *
- *  Pipeline            ARDAP
- *  Version             1.5.a6
- *  Description         Antimicrobial resistance genotyping for B. pseudomallei
+ *  Pipeline            NF-SPANDx
+ *  Version             v4.0
+ *  Description         A comparative genomics pipeline
  *  Authors             Derek Sarovich, Erin Price, Danielle Madden, Eike Steinig
  *
  */
@@ -31,7 +31,7 @@ Sequence files within current directory will be aligned against the reference us
 matrix will be generated with GATK and VCFTools
 
 
-Written by Derek Sarovich and Erin Price - University oof the Sunshine Coast, Sippy Downs, Australia
+Written by Derek Sarovich and Erin Price - University of the Sunshine Coast, Sippy Downs, Australia
 Please send bug reports to dereksarovich@gmail.com
 If you find SPANDx useful and use it in published work please cite - SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618"
 
@@ -669,68 +669,6 @@ if (params.mixtures) {
     '''
 
   }
-}
-
-// The CARD alignment and query steps are identical with or without mixtures
-
-process AlignmentCARD {
-
-    label "spandx_alignment"
-    tag { "$id" }
-
-    input:
-    file(card_ref) from Channel.fromPath("$baseDir/Databases/CARD/nucleotide_fasta_protein_homolog_model.fasta").collect()
-    set id, file(forward), file(reverse) from alignmentCARD
-
-    output:
-    set id, file("${id}.card.bam"), file("${id}.card.bam.bai"), file("card.coverage.bed") into card_coverage_ch
-
-    """
-    bwa index ${card_ref}
-    samtools faidx ${card_ref}
-    bedtools makewindows -g ${card_ref}.fai -w 90000 > card.coverage.bed
-    bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a -t $task.cpus ${card_ref} ${forward} ${reverse} > ${id}.card.sam
-    samtools view -h -b -@ 1 -q 1 -o bam_tmp ${id}.card.sam
-    samtools sort -@ 1 -o ${id}.card.bam bam_tmp
-    samtools index ${id}.card.bam
-    """
-}
-
-process CoverageCARD {
-
-    label "spandx_default"
-    tag { "$id" }
-
-    input:
-    set id, file(card_bam), file(card_bam_bai), file(card_coverage_bed) from card_coverage_ch
-
-    output:
-    set id, file("${id}.card.bedcov") into card_queries_ch
-
-    """
-    bedtools coverage -a ${card_coverage_bed} -b ${card_bam} > ${id}.card.bedcov
-    """
-
-}
-
-process CARDqueries {
-
-    label "card_queries"
-    tag { "$id" }
-
-    input:
-    file card_db_ref from card_db_file
-    set id, file(card_bedcov) from card_queries_ch
-
-
-    output:
-    set id, file("${id}.CARD_primary_output.txt") into abr_report_card_ch
-
-    script:
-    """
-    chmod +x ${baseDir}/bin/SQL_queries_CARD.sh
-    SQL_queries_CARD.sh ${id} ${card_db_ref} ${baseDir}
-    """
 }
 
 /*
