@@ -11,55 +11,82 @@
 
 log.info """
 ===============================================================================
-                           NF-ARDAP
-                             v1.5.a6
+                           NF-SPANDx
+                             v4.0
 ================================================================================
+
+Thanks for using SPANDx!!
+
+USAGE: nextflow run dsarov/spandx --ref <reference file>
+
+--anotation [includes annotation parameter must match the name specified in the snpEff database] --window [Window size in base pairs for BEDcoverage module]
+
+SPANDx by default expects reads to be paired end, in the following format: STRAIN_1.fastq.gz for the first pair and STRAIN_2.fastq.gz for the second pair.
+Reads not in this format will be ignored although you can use a different read name format by specifying the --fastq parameter
+
+SPANDx expects at least a reference file in FASTA format.
+
+By default all read files present in the current working directory will be processed.
+Sequence files within current directory will be aligned against the reference using BWA, SNPs and indels will be called with GATK and a SNP
+matrix will be generated with GATK and VCFTools
+
+
+Written by Derek Sarovich and Erin Price - University oof the Sunshine Coast, Sippy Downs, Australia
+Please send bug reports to dereksarovich@gmail.com
+If you find SPANDx useful and use it in published work please cite - SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618"
+
+#################################################################
+
 
 Input Parameter:
 
     --fastq      Input PE read file wildcard (default: *_{1,2}.fastq.gz)
 
-                Currently this is set to $params.fastq
-
-Optional Parameters:
-
-    --database   Species specific database for resistance determination
-                 (default: Burkholderia_pseudomallei_k96243)
-
-                 Currently you are using $params.database
+                 Currently this is set to $params.fastq
 
     --ref        Reference genome for alignment. Must match genome used
                  in --database (default: k96243.fasta)
 
                  Currently you are using $params.ref
 
-    --mixtures   Optionally perform within species mixtures analysis.
-                 Set this parameter to 'true' if you are dealing with
-                 multiple strains. (default: false)
+Optional Parameters:
+  --annotation   Optionally output annotated variant tables.
+                 If you want to annotate the variant output then
+                 set this parameter to the name of the variant file in snpEff
+                 (default: false)
 
-                 Currently mixtures is set to $params.mixtures
+                 Currently annotation is set to $params.annotation
 
-    --size       ARDaP can optionally down-sample your read data to
-                 run through the pipeline quicker. (default: 1000000)
+  --window       Default window size used in the bedcov coverage assessment
+                 (default: 1kb)
+
+                 Currently phylogeny is set to $params.window
+
+  --size         ARDaP can optionally down-sample your read data to
+                 run through the pipeline quicker. Set to 0 to skip downsampling
+                 (default: 1000000)
 
                  Currently you are using $params.size
 
-    --phylogeny  Please include if you would like a whole genome
-                 phylogeny (FastTree2) and merged annotation files.
-                 Note that this may take some time if you have a large
-                 number of isolates (default: false)
+  --tri_allelic  Set to true if you would like tri-allelic SNPs/indels used
+                 in the phylogenetic analysis (default: false)
 
-                 Currently phylogeny is set to $params.phylogeny
+                 Currently phylogeny is set to $params.tri_allelic
+
+  --indels       Set to true if you would like indels used
+                 in the phylogenetic analysis (default: false)
+
+                 Currently phylogeny is set to $params.indels
 
 If you want to make changes to the default `nextflow.config` file
 clone the workflow into a local directory and change parameters
 in `nextflow.config`:
 
-    nextflow clone dsarov/ardap outdir/
+    nextflow clone dsarov/spandx outdir/
 
 Update to the local cache of this workflow:
 
-    nextflow pull dsarov/ardap
+    nextflow pull dsarov/spandx
 
 ==================================================================
 ==================================================================
@@ -69,46 +96,19 @@ Update to the local cache of this workflow:
  *  Create a bunch of indices for ARDaP
  */
 
-// Define Parameters
-// $resistance_db $card_db $GWAS_cutoff
 
-// Not sure if CARD database is correctly parsed
-
-
-// Don't forget to assign CPU for tasks to optimize!
-// Setting of relational variables
-
-database=params.database
 ref=params.ref
-params.reference="${baseDir}/Databases/${database}/${ref}"
-params.resistance_db="${baseDir}/Databases/${database}/${database}.db"
-params.card_db="${baseDir}/Databases/${database}/${database}_CARD.db"
-params.snpeff="${params.database}"
-params.sweaveReport="${baseDir}/Databases/${database}/sweaveTB-WGS-Micro-Report.Rnw"
+snpeff=params.annotation
+
 
 fastq = Channel
   .fromFilePairs("${params.fastq}", flat: true)
 	.ifEmpty { exit 1, "Input read files could not be found." }
 
-resistance_database_file = file(params.resistance_db)
-if( !resistance_database_file.exists() ) {
-  exit 1, "The resistance database file file does no exist: ${params.resistance_db}"
-}
-
-reference_file = file(params.reference)
+reference_file = file(params.ref)
 if( !reference_file.exists() ) {
   exit 1, "The reference file does no exist: ${params.reference}"
 }
-
-card_db_file = file(params.card_db)
-
-patient_meta_file = file(params.patientMetaData)
-if( !patient_meta_file.exists() ) {
-  exit 1, "The specified patient metadata file does not exist: ${params.patientMetaData}"
-}
-
-sweave_report_file = file(params.sweaveReport)
-r_report_logo_file = file(params.logo)
 
 /*
 ======================================================================
