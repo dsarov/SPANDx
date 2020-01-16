@@ -105,7 +105,7 @@ fastq = Channel
   .fromFilePairs("${params.fastq}", flat: true)
 	.ifEmpty { exit 1, """
 
-  Input read files could not be found. \
+  Input read files could not be found.
   Have you included the read files in the current directory and do they have the correct naming? \
   With the parameters specified SPANDx is looking for reads named $params.fastq \
   To fix this error either rename your reads to match this formatting or specify the desired format \
