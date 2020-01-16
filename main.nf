@@ -5,7 +5,7 @@
  *  Pipeline            NF-SPANDx
  *  Version             v4.0
  *  Description         A comparative genomics pipeline
- *  Authors             Derek Sarovich, Erin Price, Danielle Madden, Eike Steinig
+ *  Authors             Derek Sarovich, Erin Price
  *
  */
 
