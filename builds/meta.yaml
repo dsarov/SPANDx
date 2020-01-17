@@ -1,0 +1,64 @@
+{% set version = "4.0" %}
+
+package:
+  name: spandx
+  version: {{ version }}
+
+source:
+  url: https://github.com/dsarov/spandx/archive/v{{ version }}.tar.gz # [linux64,linux32]
+
+build:
+  number: 0
+
+requirements:
+  build:
+      - {{ compiler('cxx') }}
+  host:
+      - trimmomatic
+      - bwa
+      - bedtools
+      - seqtk
+      - pindel
+      - mosdepth
+      - samtools=1.9
+      - picard
+      - gatk4
+      - snpEff=4.3.1t
+      - nextflow
+      - R
+      - r-knitr
+      - r-ape
+      - r-dplyr
+      - r-tinytex
+      - bioconductor-ggtree
+      - fasttree
+  run:
+      - trimmomatic
+      - bwa
+      - bedtools
+      - seqtk
+      - pindel
+      - mosdepth
+      - samtools=1.9
+      - picard
+      - gatk4
+      - sqlite
+      - snpEff=4.3.1t
+      - nextflow
+      - R
+      - r-knitr
+      - r-ape
+      - r-dplyr
+      - r-tinytex
+      - bioconductor-ggtree
+      - fasttree
+
+test:
+  commands:
+      - nextflow -h
+
+about:
+  home: 'https://github.com/dsarov/ardap'
+  license: MIT
+  license_file: LICENSE
+  summary: 'Comprehensive resistance detection from WGS'
