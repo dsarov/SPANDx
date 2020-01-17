@@ -93,7 +93,7 @@ Update to the local cache of this workflow:
 """
 
 /*  Index Section
- *  Create a bunch of indices for ARDaP
+ *  Create a bunch of indices for SPANDx
  */
 
 
@@ -107,7 +107,7 @@ fastq = Channel
 
 Input read files could not be found.
 Have you included the read files in the current directory and do they have the correct naming?
-With the parameters specified, SPANDx is looking for reads named $params.fastq
+With the parameters specified, SPANDx is looking for reads named ${params.fastq}.
 To fix this error either rename your reads to match this formatting or specify the desired format /
 when initializing SPANDx e.g. --fastq "*_{1,2}_sequence.fastq.gz"
 
@@ -115,7 +115,11 @@ when initializing SPANDx e.g. --fastq "*_{1,2}_sequence.fastq.gz"
 
 reference_file = file(params.ref)
 if( !reference_file.exists() ) {
-  exit 1, "The reference file does no exist: ${params.reference}"
+  exit 1, """
+SPANDx can't find the reference file.
+It is currently looking for this file --> ${params.reference}
+Please check that you have included the reference file in the current directory and rerun
+"""
 }
 
 /*
@@ -677,177 +681,6 @@ if (params.mixtures) {
     '''
 
   }
-}
-
-/*
-====================================================================
-                              Part 3
-  These processes will interrogate the SQL databases (except CARD)
-  These have been split to run across different flavours of variants
-                 so they can be run in parallel
-=====================================================================
-*/
- if (params.mixtures) {
-
-  process SqlSnpsIndelsMix {
-
-    label "genomic_queries"
-    tag { "$id" }
-
-    input:
-    set id, file("${id}.annotated.ALL.effects") from variants_all_ch
-    set id, file("${id}.Function_lost_list.txt") from function_lost_ch1
-    file resistance_db from resistance_database_file
-
-    output:
-    set id, file("${id}.AbR_output_snp_indel_mix.txt") into abr_report_snp_indel_mix_ch
-
-    script:
-    """
-    chmod +x ${baseDir}/bin/SQL_queries_SNP_indel_mix.sh
-    SQL_queries_SNP_indel_mix.sh ${id} ${resistance_db}
-    """
-  }
-
-  process SqlDeletionDuplicationMix {
-
-    label "genomic_queries"
-    tag { "$id" }
-
-    input:
-    set id, file("${id}.Function_lost_list.txt") from function_lost_ch2
-    set id, file("${id}.deletion_summary_mix.txt") from deletion_summary_mix_ch
-    set id, file("${id}.duplication_summary_mix.txt") from duplication_summary_mix_ch
-    file resistance_db from resistance_database_file
-
-    output:
-    set id, file("${id}.AbR_output_del_dup_mix.txt") into abr_report_del_dup_mix_ch
-
-    script:
-    """
-    chmod +x ${baseDir}/bin/SQL_queries_DelDupMix.sh
-    SQL_queries_DelDupMix.sh ${id} ${resistance_db}
-    """
-  }
-
-  process AbrReportMix {
-
-    label "report"
-    tag { "$id" }
-    //publishDir "./Outputs/AbR_reports", mode: 'copy', overwrite: false
-
-    input:
-    set id, file("${id}.CARD_primary_output.txt") from abr_report_card_ch
-    set id, file("${id}.AbR_output_del_dup_mix.txt") from abr_report_del_dup_mix_ch
-    set id, file("${id}.AbR_output_snp_indel_mix.txt") from abr_report_snp_indel_mix_ch
-    file("patientMetaData.csv") from patient_meta_file
-    file resistance_db from resistance_database_file
-
-    output:
-    set id, file("${id}.AbR_output.final.txt") into r_report_ch
-    file("patientMetaData.csv") into r_report_metadata_ch
-    file("patientDrugSusceptibilityData.csv") into r_report_drug_data_ch
-
-    script:
-    """
-    chmod +x ${baseDir}/bin/AbR_reports.sh
-    AbR_reports.sh ${id} ${resistance_db}
-    """
-  }
-}
-else {
-  process SqlSnpsIndels {
-
-    label "genomic_queries"
-    tag { "$id" }
-
-    input:
-    set id, file("${id}.annotated.indel.effects") from annotated_indels_ch
-    set id, file("${id}.annotated.snp.effects") from annotated_snps_ch
-    set id, file("${id}.Function_lost_list.txt") from function_lost_ch1
-    file resistance_db from resistance_database_file
-
-    output:
-    set id, file("${id}.AbR_output_snp_indel.txt") into abr_report_snp_indel_ch
-    //Not sure if the out needs to be specific for each process or can be merged easily
-
-    script:
-    """
-    chmod +x ${baseDir}/bin/SQL_queries_SNP_indel.sh
-    SQL_queries_SNP_indel.sh ${id} ${resistance_db}
-    """
-
-  }
-
-  process SqlDeletionDuplication {
-
-    label "genomic_queries"
-    tag { "$id" }
-
-    input:
-    set id, file("${id}.Function_lost_list.txt") from function_lost_ch2
-    set id, file("${id}.deletion_summary.txt") from deletion_summary_ch
-    set id, file("${id}.duplication_summary.txt") from duplication_summary_ch
-    file resistance_db from resistance_database_file
-
-    output:
-    set id, file("${id}.AbR_output_del_dup.txt") into abr_report_del_dup_ch
-
-    script:
-    """
-    chmod +x ${baseDir}/bin/SQL_queries_DelDup.sh
-    SQL_queries_DelDup.sh ${id} ${resistance_db}
-    """
-  }
-
-  process AbrReport {
-
-    label "report"
-    tag { "$id" }
-    //publishDir "./Outputs/AbR_reports", mode: 'copy', overwrite: false
-
-    input:
-    set id, file("${id}.CARD_primary_output.txt") from abr_report_card_ch
-    set id, file("${id}.AbR_output_del_dup.txt") from abr_report_del_dup_ch
-    set id, file("${id}.AbR_output_snp_indel.txt") from abr_report_snp_indel_ch
-    file("patientMetaData.csv") from patient_meta_file
-    file resistance_db from resistance_database_file
-
-    output:
-    set id, file("${id}.AbR_output.final.txt") into r_report_ch
-    file("patientMetaData.csv") into r_report_metadata_ch
-    file("patientDrugSusceptibilityData.csv") into r_report_drug_data_ch
-    //set id, file("${id}.AbR_output.txt")
-
-    script:
-    """
-    chmod +x ${baseDir}/bin/AbR_reports.sh
-    AbR_reports.sh ${id} ${resistance_db}
-    """
-  }
-}
-
-process R_report {
-  label "report"
-  tag { "$id" }
-  publishDir "./Outputs/AbR_reports", mode: 'copy', overwrite: true
-
-  input:
-  set id, file("${id}.AbR_output.final.txt") from r_report_ch
-  file("ARDaP_logo.png") from r_report_logo_file
-  file("patientMetaData.csv") from r_report_metadata_ch
-  file("patientDrugSusceptibilityData.csv") from r_report_drug_data_ch
-  file("sweaveTB-WGS-Micro-Report.Rnw") from sweave_report_file
-
-  output:
-  set id, file("${id}_strain.pdf")
-  set id, file("${id}.AbR_output.final.txt")
-
-  script:
-  """
-  chmod +x ${baseDir}/bin/Report.R
-  Report.R --no-save --no-restore --args SCRIPTPATH=${baseDir} strain=${id} output_path=./
-  """
 }
 
 /*
