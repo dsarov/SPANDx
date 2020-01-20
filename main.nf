@@ -57,7 +57,7 @@ Optional Parameters:
 
                  Currently annotation is set to $params.annotate
 
-  --database     If you want to annotate the variant output then set this 
+  --database     If you want to annotate the variant output then set this
                  parameter to the name of the variant file in snpEff
                  (default: false)
 
@@ -404,98 +404,6 @@ if (params.mixtures) {
       """
     }
   }
-
-  process MixtureSummariesSQL {
-
-    label "spandx_default"
-    tag { "$id" }
-
-    input:
-    set id, file(variants) from mixtureArdapProcessing
-    file(pindelD) from mixtureDeletionSummary
-    file(pindelTD) from mixtureDuplicationSummary
-
-    output:
-    set id, file("${id}.annotated.ALL.effects") into variants_all_ch
-    set id, file("${id}.Function_lost_list.txt") into function_lost_ch1, function_lost_ch2
-    set id, file("${id}.deletion_summary_mix.txt") into deletion_summary_mix_ch
-    set id, file("${id}.duplication_summary_mix.txt") into duplication_summary_mix_ch
-
-    // check additional escapes in sed command
-
-    // Use shell directive and single quotes to declare Netflow variables as !{var}
-    // prevents mucking around with escaping commands in AWK, \ need to be esacaped still
-
-    shell:
-
-    '''
-    echo 'Effects summary'
-
-    awk '{if (match($0,"ANN=")){print substr($0,RSTART)}}' !{variants} > all.effects.tmp
-    awk -F "|" '{ print $4,$10,$11,$15 }' all.effects.tmp | sed 's/c\\.//' | sed 's/p\\.//' | sed 's/n\\.//'> annotated.ALL.effects.tmp
-    grep -E "#|ANN=" !{variants} > ALL.annotated.subset.vcf
-    gatk VariantsToTable -V ALL.annotated.subset.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -GF AD -GF DP -O ALL.genotypes.subset.table
-    tail -n +2 ALL.genotypes.subset.table | awk '{ print $5,$6,$7,$8 }' > ALL.genotypes.subset.table.headerless
-    paste annotated.ALL.effects.tmp ALL.genotypes.subset.table.headerless > !{id}.annotated.ALL.effects
-
-    echo 'Identification of high confidence mutations'
-
-    grep '|HIGH|' !{variants} > ALL.func.lost
-		awk '{if (match($0,"ANN=")){print substr($0,RSTART)}}' ALL.func.lost > ALL.func.lost.annotations
-		awk -F "|" '{ print $4,$11,$15 }' ALL.func.lost.annotations | sed 's/c\\.//' | sed 's/p\\.//' | sed 's/n\\.//'> ALL.func.lost.annotations.tmp
-		grep -E "#|\\|HIGH\\|" !{variants} > ALL.annotated.func.lost.vcf
-    gatk VariantsToTable -V ALL.annotated.func.lost.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -GF AD -GF DP -O ALL.annotated.func.lost.table
-		tail -n +2 ALL.annotated.func.lost.table | awk '{ print $5,$6,$7,$8 }' > ALL.annotated.func.lost.table.headerless
-		paste ALL.func.lost.annotations.tmp ALL.annotated.func.lost.table.headerless > !{id}.Function_lost_list.txt
-
-    echo 'Summary of deletions and duplications'
-
-    grep -v '#' !{pindelD} | awk -v OFS="\t" '{ print $1,$2 }' > d.start.coords.list
-		grep -v '#' !{pindelD} | gawk 'match($0, /END=([0-9]+);/,arr){ print arr[1]}' > d.end.coords.list
-		grep -v '#' !{pindelD} | awk '{ print $10 }' | awk -F":" '{print $2 }' | awk -F"," '{ print $2 }' > mutant_depth.D
-		grep -v '#' !{pindelD} | awk '{ print $10 }' | awk -F":" '{print $2 }' | awk -F"," '{ print $1+$2 }' > depth.D
-		paste d.start.coords.list d.end.coords.list mutant_depth.D depth.D > !{id}.deletion_summary_mix.txt
-
-    grep -v '#' !{pindelTD} | awk -v OFS="\t" '{ print $1,$2 }' > td.start.coords.list
-		grep -v '#' !{pindelTD} | gawk 'match($0, /END=([0-9]+);/,arr){ print arr[1]}' > td.end.coords.list
-		grep -v '#' !{pindelTD} | awk '{ print $10 }' | awk -F":" '{print $2 }' | awk -F"," '{ print $2 }' > mutant_depth.TD
-		grep -v '#' !{pindelTD} | awk '{ print $10 }' | awk -F":" '{print $2 }' | awk -F"," '{ print $1+$2 }' > depth.TD
-		paste td.start.coords.list td.end.coords.list mutant_depth.TD depth.TD > !{id}.duplication_summary_mix.txt
-    '''
-
-  }
-
-} else {
-
-    // Not a mixture
-    //To do split GVCF calling when phylogeny isn't called
-
-    process VariantCalling {
-
-      label "spandx_gatk"
-      tag { "$id" }
-      //publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: false, pattern: '*.gvcf'
-
-      input:
-      file reference from reference_file
-      file reference_fai from ref_fai_ch1
-      file reference_dict from ref_dict_ch1
-      set id, file(dedup_bam), file(dedup_index) from variantCalling
-
-      output:
-      set id, file("${id}.raw.snps.vcf"), file("${id}.raw.snps.vcf.idx") into snpFilter
-      set id, file("${id}.raw.indels.vcf"), file("${id}.raw.indels.vcf.idx") into indelFilter
-      //file("${id}.raw.gvcf") into gvcf_files
-  //    val true into gvcf_complete_ch
-
-      // v1.4 Line 261 not included yet: gatk HaplotypeCaller -R $reference -ERC GVCF --I $GATK_REALIGNED_BAM -O $GATK_RAW_VARIANTS
-
-      """
-      gatk HaplotypeCaller -R ${reference} --ploidy 1 --I ${dedup_bam} -O ${id}.raw.snps.indels.vcf
-      gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.vcf -O ${id}.raw.snps.vcf -select-type SNP
-      gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.vcf -O ${id}.raw.indels.vcf -select-type INDEL
-      """
-    }
 
   process FilterSNPs {
 
