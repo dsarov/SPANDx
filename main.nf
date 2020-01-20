@@ -57,6 +57,12 @@ Optional Parameters:
 
                  Currently annotation is set to $params.annotate
 
+  --database     If you want to annotate the variant output then set this 
+                 parameter to the name of the variant file in snpEff
+                 (default: false)
+
+                 Currenlty, database is set to $params.database
+
   --window       Default window size used in the bedcov coverage assessment
                  (default: 1kb)
 
@@ -78,6 +84,11 @@ Optional Parameters:
 
                  Currently indels is set to $params.indels
 
+  --structural   Set to true if you would like to identify structural variants
+                 Note that this step can take a considerable amount of time if you have deep sequencing data
+
+                 Currently structural variant assessment is set to $params.structural
+
 If you want to make changes to the default `nextflow.config` file
 clone the workflow into a local directory and change parameters
 in `nextflow.config`:
@@ -98,7 +109,7 @@ Update to the local cache of this workflow:
 
 
 ref=params.ref
-snpeff=params.annotate
+snpeff=params.database
 
 
 fastq = Channel
@@ -360,35 +371,38 @@ if (params.mixtures) {
       """
       }
   }
+  if (params.structural) {
+    process PindelProcessing {
 
-  process PindelProcessing {
+      label "spandx_pindel"
+      tag { "$id" }
 
-    label "spandx_pindel"
-    tag { "$id" }
+      input:
+      file reference from reference_file
+      file reference_fai from ref_fai_ch1
+      set id, file("${id}.dedup.bam"), file(alignment_index) from mixturePindel
 
-    input:
-    file reference from reference_file
-    file reference_fai from ref_fai_ch1
-    set id, file("${id}.dedup.bam"), file(alignment_index) from mixturePindel
+      output:
+      file("pindel.out_D.vcf") into mixtureDeletionSummary
+      file("pindel.out_TD.vcf") into mixtureDuplicationSummary
 
-    output:
-    file("pindel.out_D.vcf") into mixtureDeletionSummary
-    file("pindel.out_TD.vcf") into mixtureDuplicationSummary
+      // Pindel + threads to run a bit faster
+      // In the original script, there is a pindel.out_INT, here: pindel.out_INT_final
 
-    // Pindel + threads to run a bit faster
-    // In the original script, there is a pindel.out_INT, here: pindel.out_INT_final
+      """
+      echo -e "${id}.dedup.bam\t250\tB" > pindel.bam.config
+      pindel -f ${reference} -T $task.cpus -i pindel.bam.config -o pindel.out
 
-    """
-    echo -e "${id}.dedup.bam\t250\tB" > pindel.bam.config
-    pindel -f ${reference} -T $task.cpus -i pindel.bam.config -o pindel.out
+      rm -f pindel.out_CloseEndMapped pindel.out_INT_final
 
-    rm -f pindel.out_CloseEndMapped pindel.out_INT_final
-
-    for f in pindel.out_*; do
-      pindel2vcf -r ${reference} -R ${reference.baseName} -d ARDaP -p \$f -v \${f}.vcf -e 5 -is 15 -as 50000
-      snpEff eff -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff \${f}.vcf > \${f}.vcf.annotated
-    done
-    """
+      for f in pindel.out_*; do
+        pindel2vcf -r ${reference} -R ${reference.baseName} -d ARDaP -p \$f -v \${f}.vcf -e 5 -is 15 -as 50000
+        if (params.annoate) {
+          snpEff eff -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff \${f}.vcf > \${f}.vcf.annotated
+        }
+      done
+      """
+    }
   }
 
   process MixtureSummariesSQL {
@@ -564,24 +578,25 @@ if (params.mixtures) {
     """
   }
 
+  if (params.annotate) {
+    process AnnotateSNPs {
 
-  process AnnotateSNPs {
+      // Need to split and optimize with threads
 
-    // Need to split and optimize with threads
+      label "spandx_snpeff"
+      tag { "$id" }
+      publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: false
 
-    label "spandx_snpeff"
-    tag { "$id" }
-    publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: false
+      input:
+      set id, file(snp_pass), file(snp_fail) from filteredSNPs
 
-    input:
-    set id, file(snp_pass), file(snp_fail) from filteredSNPs
+      output:
+      set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
 
-    output:
-    set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
-
-    """
-    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff $snp_pass > ${id}.PASS.snps.annotated.vcf
-    """
+      """
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff $snp_pass > ${id}.PASS.snps.annotated.vcf
+      """
+    }
   }
 
   process AnnotateIndels {
