@@ -55,7 +55,7 @@ Optional Parameters:
                  set this parameter to the name of the variant file in snpEff
                  (default: false)
 
-                 Currently annotation is set to $params.annotation
+                 Currently annotation is set to $params.annotate
 
   --window       Default window size used in the bedcov coverage assessment
                  (default: 1kb)
@@ -98,7 +98,7 @@ Update to the local cache of this workflow:
 
 
 ref=params.ref
-snpeff=params.annotation
+snpeff=params.annotate
 
 
 fastq = Channel
@@ -342,21 +342,23 @@ if (params.mixtures) {
     """
   }
 
-  process AnnotateMixture {
+  if (params.annotate) {
+      process AnnotateMixture {
 
-    label "spandx_snpeff"
-    tag { "$id" }
-    publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: false
+      label "spandx_snpeff"
+      tag { "$id" }
+      publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: false
 
-    input:
-    set id, file("${id}.PASS.snps.indels.mixed.vcf") from filteredMixture
+      input:
+      set id, file("${id}.PASS.snps.indels.mixed.vcf") from filteredMixture
 
-    output:
-    set id, file("${id}.ALL.annotated.mixture.vcf") into mixtureArdapProcessing
+      output:
+      set id, file("${id}.ALL.annotated.mixture.vcf") into mixtureArdapProcessing
 
-    """
-    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
-    """
+      """
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      """
+      }
   }
 
   process PindelProcessing {
