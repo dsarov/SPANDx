@@ -405,6 +405,39 @@ if (params.mixtures) {
     }
   }
 
+
+} else {
+
+    // Not a mixture
+    //To do split GVCF calling when phylogeny isn't called
+
+    process VariantCalling {
+
+      label "spandx_gatk"
+      tag { "$id" }
+      //publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: false, pattern: '*.gvcf'
+
+      input:
+      file reference from reference_file
+      file reference_fai from ref_fai_ch1
+      file reference_dict from ref_dict_ch1
+      set id, file(dedup_bam), file(dedup_index) from variantCalling
+
+      output:
+      set id, file("${id}.raw.snps.vcf"), file("${id}.raw.snps.vcf.idx") into snpFilter
+      set id, file("${id}.raw.indels.vcf"), file("${id}.raw.indels.vcf.idx") into indelFilter
+      //file("${id}.raw.gvcf") into gvcf_files
+  //    val true into gvcf_complete_ch
+
+      // v1.4 Line 261 not included yet: gatk HaplotypeCaller -R $reference -ERC GVCF --I $GATK_REALIGNED_BAM -O $GATK_RAW_VARIANTS
+
+      """
+      gatk HaplotypeCaller -R ${reference} --ploidy 1 --I ${dedup_bam} -O ${id}.raw.snps.indels.vcf
+      gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.vcf -O ${id}.raw.snps.vcf -select-type SNP
+      gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.vcf -O ${id}.raw.indels.vcf -select-type INDEL
+      """
+    }
+
   process FilterSNPs {
 
     label "spandx_gatk"
