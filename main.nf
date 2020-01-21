@@ -10,7 +10,7 @@
  */
 
 log.info """
-===============================================================================
+================================================================================
                            NF-SPANDx
                              v4.0
 ================================================================================
@@ -19,23 +19,26 @@ Thanks for using SPANDx!!
 
 USAGE: nextflow run dsarov/spandx --ref <reference file>
 
---anotation [includes annotation parameter must match the name specified in the snpEff database] --window [Window size in base pairs for BEDcoverage module]
-
-SPANDx by default expects reads to be paired end, in the following format: STRAIN_1.fastq.gz for the first pair and STRAIN_2.fastq.gz for the second pair.
-Reads not in this format will be ignored although you can use a different read name format by specifying the --fastq parameter
+SPANDx by default expects reads to be paired end, in the following format: STRAIN_1.fastq.gz
+for the first pair and STRAIN_2.fastq.gz for the second pair.
+Reads not in this format will be ignored although you can use a different read
+name format by specifying the --fastq parameter
 
 SPANDx expects at least a reference file in FASTA format.
 
 By default all read files present in the current working directory will be processed.
-Sequence files within current directory will be aligned against the reference using BWA, SNPs and indels will be called with GATK and a SNP
+Sequence files within current directory will be aligned against the reference
+using BWA, SNPs and indels will be called with GATK and a SNP
 matrix will be generated with GATK and VCFTools
 
 
 Written by Derek Sarovich and Erin Price - University of the Sunshine Coast, Sippy Downs, Australia
 Please send bug reports to dereksarovich@gmail.com
-If you find SPANDx useful and use it in published work please cite - SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets - BMC Research Notes 2014, 7:618"
+If you find SPANDx useful and use it in published work please cite - SPANDx: a
+genomics pipeline for comparative analysis of large haploid whole genome
+re-sequencing datasets - BMC Research Notes 2014, 7:618"
 
-#################################################################
+################################################################################
 
 
 Input Parameter:
@@ -119,7 +122,7 @@ fastq = Channel
 Input read files could not be found.
 Have you included the read files in the current directory and do they have the correct naming?
 With the parameters specified, SPANDx is looking for reads named ${params.fastq}.
-To fix this error either rename your reads to match this formatting or specify the desired format /
+To fix this error either rename your reads to match this formatting or specify the desired format
 when initializing SPANDx e.g. --fastq "*_{1,2}_sequence.fastq.gz"
 
   """ }
