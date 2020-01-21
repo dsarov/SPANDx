@@ -66,7 +66,7 @@ Optional Parameters:
 
                  Currenlty, database is set to $params.database
 
---phylogeny      If you would like to switch off phylogenetic reconstruction
+  --phylogeny    If you would like to switch off phylogenetic reconstruction
                  and just generate a list of SNPs/indels then swith this parameter
                  to false. (default: true)
 
