@@ -66,24 +66,30 @@ Optional Parameters:
 
                  Currenlty, database is set to $params.database
 
+--phylogeny      If you would like to switch off phylogenetic reconstruction
+                 and just generate a list of SNPs/indels then swith this parameter
+                 to false. (default: true)
+
+                 Currently phylogeny is set to $params.phylogeny
+
   --window       Default window size used in the bedcov coverage assessment
                  (default: 1kb)
 
                  Currently window is set to $params.window
 
   --size         ARDaP can optionally down-sample your read data to
-                 run through the pipeline quicker. Set to 0 to skip downsampling
+                 run through the pipeline quicker. Set to null to skip downsampling
                  (default: 1000000)
 
-                 Currently you are using $params.size
+                 Currently size is set to $params.size
 
   --tri_allelic  Set to true if you would like tri-allelic SNPs/indels used
-                 in the phylogenetic analysis (default: false)
+                 in the phylogenetic analysis (default: null)
 
                  Currently tri_allelic is set to $params.tri_allelic
 
   --indels       Set to true if you would like indels used
-                 in the phylogenetic analysis (default: false)
+                 in the phylogenetic analysis (default: null)
 
                  Currently indels is set to $params.indels
 
@@ -211,7 +217,7 @@ process Downsample {
     set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment, alignmentCARD)
 
     script:
-    if (params.size > 0) {
+    if (params.size) {
             """
             seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
             seqtk sample -s 11 ${reverse} $params.size | gzip - > ${id}_2_cov.fq.gz
@@ -718,6 +724,7 @@ if (params.phylogeny) {
     file("ML_phylogeny.tre") //need to count taxa to tell this to not be expected if ntaxa is < 4
     file("All_SNPs_indels_annotated.txt")
 
+    //can just add shell in front of script instead of chmod
     script:
     """
     chmod +x ${baseDir}/bin/SNP_matrix.sh
