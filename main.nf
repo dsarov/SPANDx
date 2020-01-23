@@ -142,6 +142,33 @@ Please check that you have included the reference file in the current directory 
 """
 }
 
+if(params.annotate) {
+  //check if database has been provided
+  if(params.database) {
+    println "Annotation has been requested. Looking for annotation database"
+
+    shell:
+    '''
+    snpEff databases | grep -w ${params.database}
+    '''
+   }  else {
+     exit 1, """
+     SPANDx requires a snpEff database to be specified for the annotation to work correctly
+     Please use the --database flag to specific a snpEff database compatable with your
+     reference genome.
+     A list of available databases can be found here https://sourceforge.net/projects/snpeff/files/
+     Make sure the snpEff version matches the database version.
+     """
+   }
+
+
+  }
+
+
+}
+
+
+
 /*
 ======================================================================
       Part 1: create reference indices, dict files and bed files
