@@ -118,7 +118,7 @@ Update to the local cache of this workflow:
 
 
 ref=params.ref
-snpeff=params.database
+snpeff_database=params.database
 
 
 fastq = Channel
@@ -146,11 +146,16 @@ if(params.annotate) {
   //check if database has been provided
   if(params.database) {
     println "Annotation has been requested. Looking for annotation database"
+    process check_and_dl_database {
+      executor 'local'
 
     shell:
     '''
     snpEff databases | grep -w ${params.database}
     '''
+
+  }
+
    }  else {
      exit 1, """
      SPANDx requires a snpEff database to be specified for the annotation to work correctly
@@ -163,11 +168,6 @@ if(params.annotate) {
 
 
   }
-
-
-}
-
-
 
 /*
 ======================================================================
