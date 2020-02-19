@@ -25,12 +25,6 @@ requirements:
       - gatk4
       - snpEff=4.3.1t
       - nextflow
-      - R
-      - r-knitr
-      - r-ape
-      - r-dplyr
-      - r-tinytex
-      - bioconductor-ggtree
       - fasttree
   run:
       - trimmomatic
@@ -42,15 +36,8 @@ requirements:
       - samtools=1.9
       - picard
       - gatk4
-      - sqlite
       - snpEff=4.3.1t
       - nextflow
-      - R
-      - r-knitr
-      - r-ape
-      - r-dplyr
-      - r-tinytex
-      - bioconductor-ggtree
       - fasttree
 
 test:
