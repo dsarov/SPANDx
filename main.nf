@@ -58,7 +58,7 @@ Optional Parameters:
                  set this parameter to the name of the variant file in snpEff
                  (default: false)
 
-                 Currently annotation is set to $params.annotate
+                 Currently annotation is set to $params.annotation
 
   --database     If you want to annotate the variant output then set this
                  parameter to the name of the variant file in snpEff
@@ -105,7 +105,7 @@ Optional Parameters:
                  multiple strains within the same WGS sample. (default: false)
 
                  Currently mixtures is set to $params.mixtures
-                 
+
   --structural   Set to true if you would like to identify structural variants
                  Note that this step can take a considerable amount of time if you have deep sequencing data
 
@@ -155,7 +155,7 @@ Please check that you have included the reference file in the current directory 
 """
 }
 
-if(params.annotate) {
+if(params.annotation) {
   //check if database has been provided
   if(params.database) {
     println "Annotation has been requested. Looking for annotation database"
@@ -338,14 +338,14 @@ if (params.assemblies) {
     """
 
   }
-}
+} else {
 
 /*
 =======================================================================
                Part 2C: Align reads against the reference
 =======================================================================
 */
-process ReferenceAlignment {
+  process ReferenceAlignment {
 
     label "spandx_alignment"
     tag {"$id"}
@@ -365,6 +365,7 @@ process ReferenceAlignment {
     samtools index ${id}.bam
     """
 
+  }
 }
 /*
 =======================================================================
@@ -434,9 +435,6 @@ if (params.mixtures) {
 
     output:
     set id, file("${id}.raw.snps.indels.mixed.vcf"), file("${id}.raw.snps.indels.mixed.vcf.idx") into mixtureFilter
-    //set id, file("${id}.raw.gvcf")
-	 // file("${id}.raw.gvcf") into gvcf_files
-    //val true into gvcf_complete_ch
 
     """
     gatk HaplotypeCaller -R ${reference} --I ${id}.dedup.bam -O ${id}.raw.snps.indels.mixed.vcf
@@ -472,7 +470,7 @@ if (params.mixtures) {
     """
   }
 
-  if (params.annotate) {
+  if (params.annotation) {
       process AnnotateMixture {
 
       label "spandx_snpeff"
@@ -490,6 +488,7 @@ if (params.mixtures) {
       """
       }
   }
+
   if (params.structural) {
     process PindelProcessing {
 
@@ -638,7 +637,7 @@ if (params.mixtures) {
     """
   }
 
-  if (params.annotate) {
+  if (params.annotation) {
     process AnnotateSNPs {
 
       // Need to split and optimize with threads
@@ -822,8 +821,6 @@ if (params.phylogeny) {
   process snp_matrix {
     label "snp_matrix"
     publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: false
-
-    //TO DO add additional publishDir to have annotated outputs in correct location
 
     input:
     set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
