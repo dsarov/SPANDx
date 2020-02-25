@@ -163,9 +163,9 @@ if(params.annotation) {
       executor 'local'
 
     shell:
-    '''
+    """
     snpEff databases | grep -w ${params.database}
-    '''
+    """
 
   }
 
