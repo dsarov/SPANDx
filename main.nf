@@ -64,7 +64,7 @@ Optional Parameters:
                  parameter to the name of the variant file in snpEff
                  (default: false)
 
-                 Currenlty, database is set to $params.database
+                 Currently, database is set to $params.database
 
   --phylogeny    If you would like to switch off phylogenetic reconstruction
                  and just generate a list of SNPs/indels then swith this parameter
@@ -100,6 +100,12 @@ Optional Parameters:
 
                  Currently indels is set to $params.indels
 
+  --mixtures     Optionally perform within species mixtures analysis.
+                 Set this parameter to 'true' if you are dealing with
+                 multiple strains within the same WGS sample. (default: false)
+
+                 Currently mixtures is set to $params.mixtures
+                 
   --structural   Set to true if you would like to identify structural variants
                  Note that this step can take a considerable amount of time if you have deep sequencing data
 
