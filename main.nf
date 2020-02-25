@@ -77,6 +77,13 @@ Optional Parameters:
 
                  Currently window is set to $params.window
 
+  --assemblies   Optionally include a directory of assembled genomes in the
+                 analysis. Set this parameter to 'true' if you wish to included
+                 assembled genomes and place all assembled genomes in a
+                 subdirectory called 'assemblies'. (default: false)
+
+                 Currently mictures is set to $params.assemblies
+
   --size         ARDaP can optionally down-sample your read data to
                  run through the pipeline quicker. Set to null to skip downsampling
                  (default: 1000000)
@@ -169,6 +176,18 @@ if(params.annotate) {
 
   }
 
+//load in assemblies
+
+if (params.assemblies) {
+  assembly_loc = Channel
+    .fromPath("${params.assembly_loc}", checkIfExists: true)
+    .ifEmpty {"No assembled genomes will be processed"}
+    .map { file ->
+      def id = file.name.toString().tokenize('_').get(0)
+      return tuple(id, file)
+    }
+}
+
 /*
 ======================================================================
       Part 1: create reference indices, dict files and bed files
@@ -194,6 +213,34 @@ process IndexReference {
         picard CreateSequenceDictionary R=$reference O=${reference.baseName}.dict
         bedtools makewindows -g ${reference}.fai -w $params.window > ${reference}.bed
         """
+}
+
+/*
+======================================================================
+      Part 1B: create synthetic reads from reference files
+======================================================================
+*/
+
+if (params.assemblies) {
+  process Read_synthesis {
+    label "art"
+    tag {"$assembly.baseName"}
+
+    input:
+    set id, file(assembly) from assemblies
+
+    output:
+    set id, file("${assembly.baseName}_1_cov.fq.gz"), file("${assembly.baseName}_2_cov.fq.gz") into (alignment_assembly)
+
+    """
+    art_illumina -i ${assembly} -p -l 150 -f 30 -m 500 -s 10 -ss HS25 -na -o ${assembly.baseName}_out
+    mv ${assembly.baseName}_out1.fq ${assembly.baseName}_1_cov.fq
+    mv ${assembly.baseName}_out2.fq ${assembly.baseName}_2_cov.fq
+    gzip ${assembly.baseName}_1_cov.fq
+    gzip ${assembly.baseName}_2_cov.fq
+
+    """
+  }
 }
 
 /*
@@ -257,6 +304,36 @@ process Downsample {
             """
       }
 }
+
+/*
+=======================================================================
+        Part 2C: Align reads against the reference with assemblies
+=======================================================================
+*/
+if (params.assemblies) {
+  process ReferenceAlignment_assembly {
+
+    label "spandx_alignment"
+    tag {"$id"}
+
+    input:
+    file ref_index from ref_index_ch
+    set id, file(forward), file(reverse) from alignment.mix(alignment_assembly) // Reads
+
+    output:
+    set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+
+    """
+    bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
+    -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
+    samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+    samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
+    samtools index ${id}.bam
+    """
+
+  }
+}
+
 /*
 =======================================================================
                Part 2C: Align reads against the reference
