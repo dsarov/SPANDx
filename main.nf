@@ -43,7 +43,7 @@ re-sequencing datasets - BMC Research Notes 2014, 7:618"
 
 Input Parameter:
 
-    --fastq      Input PE read file wildcard (default: *_{1,2}.fastq.gz)
+    --fastq      Input PE read file wildcard (default: "*_{1,2}.fastq.gz")
 
                  Currently this is set to $params.fastq
 
