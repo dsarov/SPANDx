@@ -175,7 +175,7 @@ if(params.annotation) {
      Please use the --database flag to specific a snpEff database compatable with your
      reference genome.
      A list of available databases can be found here https://sourceforge.net/projects/snpeff/files/
-     Make sure the snpEff version matches the database version.
+     Please make sure the snpEff version matches the database version.
      """
    }
 
@@ -484,7 +484,7 @@ if (params.mixtures) {
       set id, file("${id}.ALL.annotated.mixture.vcf") into mixtureArdapProcessing
 
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
       """
       }
   }
@@ -516,7 +516,7 @@ if (params.mixtures) {
       for f in pindel.out_*; do
         pindel2vcf -r ${reference} -R ${reference.baseName} -d ARDaP -p \$f -v \${f}.vcf -e 5 -is 15 -as 50000
         if (params.annoate) {
-          snpEff eff -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff \${f}.vcf > \${f}.vcf.annotated
+          snpEff eff -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database \${f}.vcf > \${f}.vcf.annotated
         }
       done
       """
@@ -653,7 +653,7 @@ if (params.mixtures) {
       set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
 
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff $snp_pass > ${id}.PASS.snps.annotated.vcf
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff snpeff_database $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
     }
   }
@@ -673,7 +673,7 @@ if (params.mixtures) {
     set id, file("${id}.PASS.indels.annotated.vcf") into annotatedIndels
 
     """
-    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $params.snpeff $indel_pass > ${id}.PASS.indels.annotated.vcf
+    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database $indel_pass > ${id}.PASS.indels.annotated.vcf
     """
   }
 
@@ -834,8 +834,7 @@ if (params.phylogeny) {
     //can just add shell in front of script instead of chmod
     script:
     """
-    chmod +x ${baseDir}/bin/SNP_matrix.sh
-    SNP_matrix.sh $params.snpeff ${baseDir}
+    bash SNP_matrix.sh $params.snpeff ${baseDir}
     """
   }
 }
