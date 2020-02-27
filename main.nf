@@ -53,6 +53,7 @@ Input Parameter:
                  Currently you are using $params.ref
 
 Optional Parameters:
+
   --annotation   Optionally output annotated variant tables.
                  If you want to annotate the variant output then
                  set this parameter to the name of the variant file in snpEff
@@ -165,21 +166,11 @@ if(params.annotation) {
     conda = ""
     executor 'local'
 
-    shell:
+    script:
     """
-    snpEff databases | grep -w ${params.database}
-    status=$?
-    if [ ! $status == 0 ]; then
-        echo "SPANDx couldn't find the reference genome in the SnpEff config file"
-		echo "The name of the annotated reference genome specified with the -v switch must match a reference genome in the SnpEff database"
-        echo "Does the SnpEff.config file contain the reference specified with the -v switch?"
-		echo "Is the SnpEff.config file in the location specified by SPANDx.config?"
-	    echo "If both of these parameters are correct please refer to the SnpEff manual for further details on the setup of SnpEff"
-		exit 1
-    else
-        echo -e "SPANDx found the reference file in the SnpEff.config file\n"
-    fi
+    bash Check_and_DL_SnpEff_database.sh ${params.database} ${baseDir} ${ref}
     """
+
 
   }
 
@@ -419,14 +410,17 @@ process ReferenceCoverage {
     set id, file(dedup_bam), file(dedup_bam_bai) from averageCoverage
 
     output:
-    set id, file("output.per-base.bed.gz"), file("${id}.depth.txt") into (coverageData)
+    set id, file("${id}.bedcov")
+    file("${id}.bedcov") into bedcov_files
 
     """
-    mosdepth --by ${refcov} output ${dedup_bam}
-    sum_depth=\$(zcat output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
-    total_chromosomes=\$(zcat output.regions.bed.gz | awk '{print \$4}' | wc -l)
-    echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
+    bedtools coverage -a ${refcov} -b ${dedup_bam} > ${id}.bedcov
+    sed
     """
+    //mosdepth --by ${refcov} output ${dedup_bam}
+    //sum_depth=\$(zcat output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+    //total_chromosomes=\$(zcat output.regions.bed.gz | awk '{print \$4}' | wc -l)
+    //echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
 }
 /*
 =======================================================================
@@ -497,9 +491,15 @@ if (params.mixtures) {
       output:
       set id, file("${id}.ALL.annotated.mixture.vcf") into mixtureArdapProcessing
 
+      //Check to see if there is a databae in the default location then run
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v $snpeff_database ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
       """
+
+      //If database isn't found then check the local directory
+    //  """
+    //  snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+    //  """
       }
   }
 
@@ -530,7 +530,7 @@ if (params.mixtures) {
       for f in pindel.out_*; do
         pindel2vcf -r ${reference} -R ${reference.baseName} -d ARDaP -p \$f -v \${f}.vcf -e 5 -is 15 -as 50000
         if (params.annoate) {
-          snpEff eff -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database \${f}.vcf > \${f}.vcf.annotated
+          snpEff eff -no-downstream -no-intergenic -ud 100 -v $snpeff_database \${f}.vcf > \${f}.vcf.annotated
         }
       done
       """
@@ -666,11 +666,17 @@ if (params.mixtures) {
       output:
       set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
 
+      //Look for the annotation in the default location
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff snpeff_database $snp_pass > ${id}.PASS.snps.annotated.vcf
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v snpeff_database $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
+      //if not found look in the non-default location
+      //  """
+      //  snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff snpeff_database $snp_pass > ${id}.PASS.snps.annotated.vcf
+      //  """
+
     }
-  }
+
 
   process AnnotateIndels {
     // TO DO
@@ -686,91 +692,16 @@ if (params.mixtures) {
     output:
     set id, file("${id}.PASS.indels.annotated.vcf") into annotatedIndels
 
+    //Look for the annotation in the default location
     """
-    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database $indel_pass > ${id}.PASS.indels.annotated.vcf
+    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v $snpeff_database $indel_pass > ${id}.PASS.indels.annotated.vcf
     """
+    //if not found look in the non-default location
+    //"""
+    //snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database $indel_pass > ${id}.PASS.indels.annotated.vcf
+    //"""
   }
-
-  process VariantSummaries {
-
-    label "spandx_default"
-    tag { "$id" }
-
-    input:
-    set id, file(perbase), file(depth) from coverageData
-
-    output:
-    set id, file("${id}.deletion_summary.txt") into deletion_summary_ch
-    set id, file("${id}.duplication_summary.txt") into duplication_summary_ch
-
-    """
-		echo -e "Chromosome\tStart\tEnd\tInterval" > tmp.header
-		zcat $perbase | awk '\$4 ~ /^0/ { print \$1,\$2,\$3,\$3-\$2 }' > del.summary.tmp
-		cat tmp.header del.summary.tmp > ${id}.deletion_summary.txt
-
-    covdep=\$(head -n 1 $depth)
-    DUP_CUTOFF=\$(echo "\$covdep*3" | bc)
-
-    zcat $perbase | awk -v DUP_CUTOFF="\$DUP_CUTOFF" '\$4 >= DUP_CUTOFF { print \$1,\$2,\$3,\$3-\$2 }' > dup.summary.tmp
-
-	  i=\$(head -n1 dup.summary.tmp | awk '{ print \$2 }')
-	  k=\$(tail -n1 dup.summary.tmp | awk '{ print \$3 }')
-	  chr=\$(head -n1 dup.summary.tmp | awk '{ print \$1 }')
-
-	  awk -v i="\$i" -v k="\$k" -v chr="\$chr" 'BEGIN {printf "chromosome " chr " start " i " "; j=i} {if (i==\$2 || i==\$2-1 || i==\$2-2 ) {
-		i=\$3;
-		}
-		else {
-		  print "end "i " interval " i-j;
-		  j=\$2;
-		  i=\$3;
-		  printf "chromosome " \$1 " start "j " ";
-		}} END {print "end "k " interval "k-j}' < dup.summary.tmp > dup.summary.tmp1
-
-	  sed -i 's/chromosome\\|start \\|end \\|interval //g' dup.summary.tmp1
-	  echo -e "Chromosome\\tStart\\tEnd\\tInterval" > dup.summary.tmp.header
-	  cat dup.summary.tmp.header dup.summary.tmp1 > ${id}.duplication_summary.txt
-    """
-  }
-
-  shell:
-  process VariantSummariesSQL {
-
-    label "spandx_default"
-    tag { "$id" }
-
-    input:
-    set id, file(indels) from annotatedIndels
-    set id, file(snps) from annotatedSNPs
-
-    output:
-    set id, file("${id}.annotated.indel.effects") into annotated_indels_ch
-    set id, file("${id}.annotated.snp.effects") into annotated_snps_ch
-    set id, file("${id}.Function_lost_list.txt") into function_lost_ch1, function_lost_ch2
-
-    shell:
-
-    '''
-    awk '{
-			if (match($0,"ANN=")){print substr($0,RSTART)}
-			}' !{indels} > indel.effects.tmp
-
-		awk -F "|" '{ print $4,$10,$11,$15 }' indel.effects.tmp | sed 's/c\\.//' | sed 's/p\\.//' | sed 's/n\\.//'> !{id}.annotated.indel.effects
-
-		awk '{
-			if (match($0,"ANN=")){print substr($0,RSTART)}
-			}' !{snps} > snp.effects.tmp
-		awk -F "|" '{ print $4,$10,$11,$15 }' snp.effects.tmp | sed 's/c\\.//' | sed 's/p\\.//' | sed 's/n\\.//' > !{id}.annotated.snp.effects
-
-		echo 'Identifying high consequence mutations'
-
-		grep 'HIGH' snp.effects.tmp  | awk -F"|" '{ print $4,$11 }' >> !{id}.Function_lost_list.txt
-		grep 'HIGH' indel.effects.tmp | awk -F"|" '{ print $4,$11 }' >> !{id}.Function_lost_list.txt
-
-		sed -i 's/p\\.//' !{id}.Function_lost_list.txt
-    '''
-
-  }
+ }
 }
 
 /*
@@ -780,6 +711,22 @@ if (params.mixtures) {
 =
 ===========================================================================
 */
+process Merge_bedcov {
+  label "bedcov"
+  tag { "$id" }
+  publishDir "./Outputs/Coverage", mode: 'copy', overwrite: false
+
+  input:
+  file("*.bedcov") from bedcov_files.collect()
+
+  output:
+  file("Bedcov_merge.txt")
+
+  """
+  bash Bedcov_merge.sh
+  """
+}
+
 
 if (params.phylogeny) {
 
@@ -808,7 +755,7 @@ if (params.phylogeny) {
 
   process Master_vcf {
     label "master_vcf"
-    tag { "id" }
+    //tag { "$id" }
     publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: false
 
     input:
@@ -822,8 +769,7 @@ if (params.phylogeny) {
 
     script:
     """
-    chmod +x ${baseDir}/bin/Master_vcf.sh
-    Master_vcf.sh ${reference.baseName}
+    bash Master_vcf.sh ${reference.baseName}
     gatk VariantFiltration -R ${reference} -O out.filtered.vcf -V out.vcf \
     --cluster-size $params.CLUSTER_SNP -window $params.CLUSTER_WINDOW_SNP \
     -filter "QD < $params.QD_SNP" --filter-name "QDFilter" \
@@ -845,10 +791,9 @@ if (params.phylogeny) {
     file("ML_phylogeny.tre") //need to count taxa to tell this to not be expected if ntaxa is < 4
     file("All_SNPs_indels_annotated.txt")
 
-    //can just add shell in front of script instead of chmod
     script:
     """
-    bash SNP_matrix.sh $params.snpeff ${baseDir}
+    bash SNP_matrix.sh ${snpeff_database} ${baseDir}
     """
   }
 }
