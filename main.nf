@@ -160,11 +160,25 @@ if(params.annotation) {
   if(params.database) {
     println "Annotation has been requested. Looking for annotation database"
     process check_and_dl_database {
-      executor 'local'
+
+    label "snpeff_dl_db"
+    conda = ""
+    executor 'local'
 
     shell:
     """
     snpEff databases | grep -w ${params.database}
+    status=$?
+    if [ ! $status == 0 ]; then
+        echo "SPANDx couldn't find the reference genome in the SnpEff config file"
+		echo "The name of the annotated reference genome specified with the -v switch must match a reference genome in the SnpEff database"
+        echo "Does the SnpEff.config file contain the reference specified with the -v switch?"
+		echo "Is the SnpEff.config file in the location specified by SPANDx.config?"
+	    echo "If both of these parameters are correct please refer to the SnpEff manual for further details on the setup of SnpEff"
+		exit 1
+    else
+        echo -e "SPANDx found the reference file in the SnpEff.config file\n"
+    fi
     """
 
   }
