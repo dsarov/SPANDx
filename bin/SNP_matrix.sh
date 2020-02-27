@@ -51,25 +51,6 @@ paste -d '\n' taxa.fasttree grid.nucleotide.fasttree >Ortho_SNP_matrix_FastTree2
 fasttree -log ML_log.txt -nt Ortho_SNP_matrix_FastTree2.nex > ML_phylogeny.tre
 fasttree -log MP_log.txt -noml -nt Ortho_SNP_matrix_FastTree2.nex > MP_phylogeny.tre
 
-##run paup to create tree
-
-#if [ "$ntaxa" -gt 4 ]; then
-#  echo "Running PAUP"
-#PAUP block to be inserted into nexus file
-#cat <<_EOF_ > tmpnex
-#begin paup;
-#Set AllowPunct=Yes;
-#lset nthreads=2;
-#hsearch;
-#savetrees from=1 to=1 brlens=yes;
-#_EOF_
-#  cat Ortho_SNP_matrix.nex tmpnex > run.nex
-#  paup -n run.nex >& paup_log.txt
-#  mv run.tre MP_phylogeny.tre
-#else
-#  echo "Fewer than 4 taxa found. Skipping creation of MP tree"
-#fi
-
 ###############################################
 ##
 ## These steps will take the merged SNP outputs, annotate them and reformat the data into a tab delimited txt file for importation into excel
@@ -101,7 +82,7 @@ awk ' { for (i=6; i<=NF; i++) {
        {print $0} ' out.vcf.table.all.tmp > out.vcf.table.all
 
 	
-snpEff eff -no-downstream -no-intergenic -ud 100 -formatEff -v -dataDir ${baseDir}/resources/snpeff ${variant_genome_path} out.vcf > out.annotated.vcf
+snpEff eff -no-downstream -no-intergenic -ud 100 -formatEff -v ${variant_genome_path} out.vcf > out.annotated.vcf
 	
 #remove headers from annotated vcf and out.vcf
 grep -v '#' out.annotated.vcf > out.annotated.vcf.headerless
@@ -128,6 +109,6 @@ echo -e "Effect\tImpact\tFunctional_Class\tCodon_change\tProtein_and_nucleotide_
 paste header.left header.right > header
 cat header out.vcf.headerless.plus.effects > All_SNPs_indels_annotated.txt
 	
-echo "ARDaP has finished"
+echo "SPANDx has finished"
 
 exit 0
