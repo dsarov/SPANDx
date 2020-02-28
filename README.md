@@ -14,12 +14,13 @@ SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/Derek
 - [GWAS and SPANDx](gWAS-and-spandx)
 - [Citation](#citation)
 
-## Updates 
-###SPANDx 4.0
+## Updates
+
+### SPANDx 4.0
 As of SPANDx version 4.0 we've completely overhauled the software and added a few cool features. SPANDx now uses Nextflow for job and pipeline management. This means that we no longer use the clunky job management script that had issues running on HPCs with odd resource management systems or strict resource requesting requirements. SPANDx is now mixture aware (!), at least when it comes to SNP identification and annotation. Mixed SNPs still get excluded from phylogenetic analysis, which is intentional, but can be found in the individual gVCFs/VCFs. We've switched to the GATK 4.0+ and now use gVCFs instead of the standard VCF format. We've done away with using paup or RAXML for tree construction and just use Fastree for both ML and MP. Trees are now drawn as part of the pipeline rather than having to do an additional step after the pipeline completes.
 
 ------------------
-###SPANDx 3.2
+#### SPANDx 3.2
 As of SPANDx version 3.2 we've upgraded to BWA-mem alignment (BWA v0.7+). This algorithm provides vastly improved intra-genus SNP/indel identification, and improved intra-species variant identification, and will be used as default for SPANDx versions post v3.2. If you would like to use a pre 0.7 version of bwa with the aln/sampe algorithm, please use a version of SPANDx pre v3.2. All version are available on sourceforge https://sourceforge.net/projects/spandx/
  
  - Note: We haven't yet upgraded the pipeline for really old Illumina data (pre 1.3 quality encoding). This will be implemented soon.
