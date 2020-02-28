@@ -415,7 +415,6 @@ process ReferenceCoverage {
 
     """
     bedtools coverage -a ${refcov} -b ${dedup_bam} > ${id}.bedcov
-    sed
     """
     //mosdepth --by ${refcov} output ${dedup_bam}
     //sum_depth=\$(zcat output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
@@ -778,24 +777,45 @@ if (params.phylogeny) {
     """
 
   }
-  process snp_matrix {
-    label "snp_matrix"
-    publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: false
+  if (params.annotation) {
+    process snp_matrix {
+      label "snp_matrix"
+      publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: false
 
-    input:
-    set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
+      input:
+      set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
 
-    output:
-    file("Ortho_SNP_matrix.nex")
-    file("MP_phylogeny.tre")
-    file("ML_phylogeny.tre") //need to count taxa to tell this to not be expected if ntaxa is < 4
-    file("All_SNPs_indels_annotated.txt")
+      output:
+      file("Ortho_SNP_matrix.nex")
+      file("MP_phylogeny.tre")
+      file("ML_phylogeny.tre") //need to count taxa to tell this to not be expected if ntaxa is < 4
+      file("All_SNPs_indels_annotated.txt")
 
-    script:
-    """
-    bash SNP_matrix.sh ${snpeff_database} ${baseDir}
-    """
+      script:
+      """
+      bash SNP_matrix.sh ${snpeff_database} ${baseDir}
+      """
+    }
+ } else {
+   process snp_matrix_no_annotate {
+      label "snp_matrix"
+      publishDir "./Outputs/Phylogeny", mode: 'copy', overwrite: false
+
+      input:
+      set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
+
+      output:
+      file("Ortho_SNP_matrix.nex")
+      file("MP_phylogeny.tre")
+      file("ML_phylogeny.tre") //need to count taxa to tell this to not be expected if ntaxa is < 4
+
+
+      script:
+      """
+      bash SNP_matrix_no_annotate.sh ${baseDir}
+      """
   }
+ }
 }
 
 workflow.onComplete {
