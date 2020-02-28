@@ -36,32 +36,34 @@ SPANDx is your one-stop tool for identifying SNP and indel variants in haploid g
 ## Installation
 Short version for those that just want to get started and understand how environments in conda work
 SPANDx is available on our development channel and its dependencies can be installed with:
-
+```
 conda install -c dsarov -c bioconda -c conda-forge spandx
-
+```
 The pipeline itself is run with Nextflow from a local cache of the repository:
-
+```
 nextflow run dsarov/spandx
-
+```
 The local cache can be updated with
-
+```
 nextflow pull dsarov/spandx
-
+```
 If you want to make changes to the default nextflow.config file clone the workflow into a local directory and change parameters in nextflow.config:
-
+```
 nextflow clone dsarov/spandx install_dir/
-
-Or navigate to the conda install path of ARDaP and change the nextflow.config in that location.
+```
+Or navigate to the conda install path of SPANDx and change the nextflow.config in that location.
 
 Long version for those unfamiliar with environments or just want all the steps for recommended installation
 Make sure you have the conda package manager installed (e.g. Anaconda, miniconda). You can check this by testing if you can find the conda command (which conda). If you do have conda installed then it's a good idea to update conda so you have the latest version conda update conda. If you don't have this software installed then go to the miniconda install page and follow the instructions for your OS. After the install, make sure your install is up-to-date conda update conda.
 
-Create a new environment with conda called "ardap" and install the software with conda create --name ardap -c dsarov -c bioconda -c conda-forge ardap. Follow the instructions and the software should fully install with all dependencies.
+Create a new environment with conda called "spandx" and install the software with conda create --name spandx -c dsarov -c bioconda -c conda-forge spandx. Follow the instructions and the software should fully install with all dependencies.
 
-Activate the ardap environment that was installed by conda, conda activate ardap
+Activate the spandx environment that was installed by conda, conda activate spandx
 
-To run ARDaP, nextflow run dsarov/spandx.
-
+To run SPANDx, 
+```
+nextflow run dsarov/spandx.
+```
 If you are running this pipeline on a HPC/submission system (e.g. PBS) then using the screen command will allow you to detach the terminal while the pipeline is still running in the background## Installation
 
 **Github**
@@ -75,7 +77,7 @@ git clone https://github.com/dsarov/SPANDx.git
 2) Install a spandx environment using conda
 
 ```
-conda env create --name spandx -f env.yml
+conda env create --name spandx -f env.yaml
 ```
 
 **Optional for GWAS** 
