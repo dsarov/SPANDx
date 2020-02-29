@@ -86,18 +86,18 @@ Optional Parameters:
                  Currently mictures is set to $params.assemblies
 
   --size         ARDaP can optionally down-sample your read data to
-                 run through the pipeline quicker. Set to null to skip downsampling
+                 run through the pipeline quicker. Set to false to skip downsampling
                  (default: 1000000)
 
                  Currently size is set to $params.size
 
   --tri_allelic  Set to true if you would like tri-allelic SNPs/indels used
-                 in the phylogenetic analysis (default: null)
+                 in the phylogenetic analysis (default: false)
 
                  Currently tri_allelic is set to $params.tri_allelic
 
   --indels       Set to true if you would like indels used
-                 in the phylogenetic analysis (default: null)
+                 in the phylogenetic analysis (default: true)
 
                  Currently indels is set to $params.indels
 
@@ -308,7 +308,7 @@ process Downsample {
             seqtk sample -s 11 ${reverse} $params.size | gzip - > ${id}_2_cov.fq.gz
             """
      } else {
-            // Rename files even if not downsampled to channel into Alignment
+            // Rename files if not downsampled and feed into alignment channel
             """
             mv ${forward} ${id}_1_cov.fq.gz
             mv ${reverse} ${id}_2_cov.fq.gz
