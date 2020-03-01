@@ -667,11 +667,11 @@ if (params.mixtures) {
 
       //Look for the annotation in the default location
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v snpeff_database $snp_pass > ${id}.PASS.snps.annotated.vcf
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
       //if not found look in the non-default location
       //  """
-      //  snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff snpeff_database $snp_pass > ${id}.PASS.snps.annotated.vcf
+      //  snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff  $snp_pass > ${id}.PASS.snps.annotated.vcf
       //  """
 
     }
@@ -693,7 +693,7 @@ if (params.mixtures) {
 
     //Look for the annotation in the default location
     """
-    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v $snpeff_database $indel_pass > ${id}.PASS.indels.annotated.vcf
+    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
     """
     //if not found look in the non-default location
     //"""
