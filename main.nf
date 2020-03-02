@@ -492,7 +492,7 @@ if (params.mixtures) {
 
       //Check to see if there is a databae in the default location then run
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v $snpeff_database ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
       """
 
       //If database isn't found then check the local directory
@@ -529,7 +529,7 @@ if (params.mixtures) {
       for f in pindel.out_*; do
         pindel2vcf -r ${reference} -R ${reference.baseName} -d ARDaP -p \$f -v \${f}.vcf -e 5 -is 15 -as 50000
         if (params.annoate) {
-          snpEff eff -no-downstream -no-intergenic -ud 100 -v $snpeff_database \${f}.vcf > \${f}.vcf.annotated
+          snpEff eff -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} \${f}.vcf > \${f}.vcf.annotated
         }
       done
       """
@@ -779,7 +779,7 @@ if (params.phylogeny) {
   }
   if (params.annotation) {
     process snp_matrix {
-      label "snp_matrix"
+      label "SNP_matrix"
       publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: false
 
       input:
@@ -798,7 +798,7 @@ if (params.phylogeny) {
     }
  } else {
    process snp_matrix_no_annotate {
-      label "snp_matrix"
+      label "SNP_matrix"
       publishDir "./Outputs/Phylogeny", mode: 'copy', overwrite: false
 
       input:
