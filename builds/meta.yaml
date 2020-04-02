@@ -1,4 +1,4 @@
-{% set version = "4.0" %}
+{% set version = "4.0.1" %}
 
 package:
   name: spandx
@@ -45,7 +45,7 @@ test:
       - nextflow -h
 
 about:
-  home: 'https://github.com/dsarov/ardap'
+  home: 'https://github.com/dsarov/SPANDx'
   license: MIT
   license_file: LICENSE
-  summary: 'Comprehensive resistance detection from WGS'
+  summary: 'SPANDx: a comparative genomics pipeline'
