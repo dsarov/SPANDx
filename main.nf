@@ -3,7 +3,7 @@
 /*
  *
  *  Pipeline            NF-SPANDx
- *  Version             v4.0
+ *  Version             v4.0.1
  *  Description         A comparative genomics pipeline
  *  Authors             Derek Sarovich, Erin Price
  *
@@ -12,7 +12,7 @@
 log.info """
 ================================================================================
                            NF-SPANDx
-                             v4.0
+                             v4.0.1
 ================================================================================
 
 Thanks for using SPANDx!!
