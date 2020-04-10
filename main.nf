@@ -151,7 +151,7 @@ reference_file = file(params.ref)
 if( !reference_file.exists() ) {
   exit 1, """
 SPANDx can't find the reference file.
-It is currently looking for this file --> ${params.reference}
+It is currently looking for this file --> ${params.ref}
 Please check that you have included the reference file in the current directory and rerun
 """
 }
