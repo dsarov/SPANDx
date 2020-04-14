@@ -489,10 +489,12 @@ if (params.mixtures) {
 
       output:
       set id, file("${id}.ALL.annotated.mixture.vcf") into mixtureArdapProcessing
+      set id, file("${id}_summary.html") into htmlOutput
 
       //Check to see if there is a databae in the default location then run
       """
       snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      mv snpEff_summary_SNPs.html ${id}_summary.html
       """
 
       //If database isn't found then check the local directory
@@ -664,10 +666,12 @@ if (params.mixtures) {
 
       output:
       set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
+      set id, file("${id}_summary.html") into htmlOutput
 
       //Look for the annotation in the default location
       """
       snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
+      mv snpEff_summary_SNPs.html ${id}_summary.html
       """
       //if not found look in the non-default location
       //  """
