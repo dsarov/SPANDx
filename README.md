@@ -112,7 +112,7 @@ To achieve high-quality variant calls, SPANDx incorporates the following program
 - SNPEff
 - VCFtools
 
-## Usage
+## Usage (prior to version 4)
 
 ```bash
 SPANDx.sh -r REFERENCE
