@@ -234,7 +234,7 @@ process IndexReference {
 
 if (params.assemblies) {
   process Read_synthesis {
-    label "art"
+    label "spandx_default"
     tag {"$assembly.baseName"}
 
     input:
