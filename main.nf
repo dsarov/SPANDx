@@ -190,7 +190,7 @@ if(params.annotation) {
 //load in assemblies
 
 if (params.assemblies) {
-  assembly_loc = Channel
+  assembly_ch = Channel
     .fromPath("${params.assembly_loc}", checkIfExists: true)
     .ifEmpty {"No assembled genomes will be processed"}
     .map { file ->
@@ -238,7 +238,7 @@ if (params.assemblies) {
     tag {"$assembly.baseName"}
 
     input:
-    set id, file(assembly) from assemblies
+    set id, file(assembly) from assembly_ch
 
     output:
     set id, file("${assembly.baseName}_1_cov.fq.gz"), file("${assembly.baseName}_2_cov.fq.gz") into (alignment_assembly)
