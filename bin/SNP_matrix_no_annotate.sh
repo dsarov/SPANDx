@@ -23,7 +23,7 @@ gatk VariantsToTable -V out.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -O 
 ###########################################################################
 
 echo "Creating SNP matrix"
-grep 'SNP' out.vcf.table | grep -v ',' | grep -v '*' | grep -v '\.' > out.vcf.table.snps.clean
+awk '$5 ~/SNP/' out.vcf.table | awk '$4 !~/\.,\*/' | grep -v '\./\.' > out.vcf.table.snps.clean
 # replace A/A, C/C, G/G, T/T genotypes with single nucleotides A, G, C, T etc etc 
 sed -i 's#A/A\|A|A#A#g' out.vcf.table.snps.clean
 sed -i 's#G/G\|G|G#G#g' out.vcf.table.snps.clean
