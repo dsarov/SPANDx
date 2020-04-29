@@ -83,11 +83,11 @@ Optional Parameters:
                  assembled genomes and place all assembled genomes in a
                  subdirectory called 'assemblies'. (default: false)
 
-                 Currently mictures is set to $params.assemblies
+                 Currently assemblies is set to $params.assemblies
 
   --size         SPANDx can optionally down-sample your read data to
                  run through the pipeline quicker. Set to 0 to skip downsampling
-                 (default: 0). NB the number specified here refers to the number 
+                 (default: 0). NB the number specified here refers to the number
                  of reads kept in each pair. Genome coverage will vary with genome
                  size and sequence length.
 
