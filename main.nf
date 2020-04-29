@@ -302,7 +302,7 @@ process Downsample {
     set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment, alignmentCARD)
 
     script:
-    if (params.size) {
+    if (params.size > 0) {
             """
             seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
             seqtk sample -s 11 ${reverse} $params.size | gzip - > ${id}_2_cov.fq.gz
