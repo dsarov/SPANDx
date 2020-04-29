@@ -85,7 +85,7 @@ Optional Parameters:
 
                  Currently mictures is set to $params.assemblies
 
-  --size         ARDaP can optionally down-sample your read data to
+  --size         SPANDx can optionally down-sample your read data to
                  run through the pipeline quicker. Set to false to skip downsampling
                  (default: 1000000)
 
