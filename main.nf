@@ -86,8 +86,10 @@ Optional Parameters:
                  Currently mictures is set to $params.assemblies
 
   --size         SPANDx can optionally down-sample your read data to
-                 run through the pipeline quicker. Set to false to skip downsampling
-                 (default: 1000000)
+                 run through the pipeline quicker. Set to 0 to skip downsampling
+                 (default: 0). NB the number specified here refers to the number 
+                 of reads kept in each pair. Genome coverage will vary with genome
+                 size and sequence length.
 
                  Currently size is set to $params.size
 
