@@ -94,25 +94,31 @@ Optional Parameters:
                  Currently size is set to $params.size
 
   --tri_allelic  Set to true if you would like tri-allelic SNPs/indels used
-                 in the phylogenetic analysis (default: false)
+                 in the phylogenetic analysis (default: false).
 
                  Currently tri_allelic is set to $params.tri_allelic
 
   --indels       Set to true if you would like indels used
-                 in the phylogenetic analysis (default: true)
+                 in the phylogenetic analysis (default: true).
 
                  Currently indels is set to $params.indels
 
   --mixtures     Optionally perform within species mixtures analysis.
                  Set this parameter to 'true' if you are dealing with
-                 multiple strains within the same WGS sample. (default: false)
+                 multiple strains within the same WGS sample (default: false).
 
                  Currently mixtures is set to $params.mixtures
 
   --structural   Set to true if you would like to identify structural variants
-                 Note that this step can take a considerable amount of time if you have deep sequencing data
+                 Note that this step can take a considerable amount of time if
+                 you have deep sequencing data (default: false).
 
                  Currently structural variant assessment is set to $params.structural
+
+  --notrim       Although not generally recommended to switch off, set to true
+                 if you want to skip the timmomatic step (default: false).
+
+                 Currently notrim is set to $params.notrim
 
 If you want to make changes to the default `nextflow.config` file
 clone the workflow into a local directory and change parameters
@@ -279,12 +285,20 @@ process Trimmomatic {
     output:
     set id, "${id}_1.fq.gz", "${id}_2.fq.gz" into downsample
 
-    """
-    trimmomatic PE -threads $task.cpus ${forward} ${reverse} \
-    ${id}_1.fq.gz ${id}_1_u.fq.gz ${id}_2.fq.gz ${id}_2_u.fq.gz \
-    ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
-    LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
-    """
+    script:
+    if (params.notrim) {
+      """
+      trimmomatic PE -threads $task.cpus ${forward} ${reverse} \
+      ${id}_1.fq.gz ${id}_1_u.fq.gz ${id}_2.fq.gz ${id}_2_u.fq.gz \
+      ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
+      LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
+      """
+    } else {
+      """
+      mv ${forward} ${id}_1.fq.gz
+      mv ${reverse} ${id}_2.fq.gz
+      """
+  }
 }
 /*
 =======================================================================
@@ -305,17 +319,17 @@ process Downsample {
 
     script:
     if (params.size > 0) {
-            """
-            seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
-            seqtk sample -s 11 ${reverse} $params.size | gzip - > ${id}_2_cov.fq.gz
-            """
+      """
+      seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
+      seqtk sample -s 11 ${reverse} $params.size | gzip - > ${id}_2_cov.fq.gz
+      """
      } else {
             // Rename files if not downsampled and feed into alignment channel
-            """
-            mv ${forward} ${id}_1_cov.fq.gz
-            mv ${reverse} ${id}_2_cov.fq.gz
-            """
-      }
+      """
+      mv ${forward} ${id}_1_cov.fq.gz
+      mv ${reverse} ${id}_2_cov.fq.gz
+      """
+  }
 }
 
 /*
