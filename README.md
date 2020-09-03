@@ -105,12 +105,14 @@ To achieve high-quality variant calls, SPANDx incorporates the following program
 ## Usage (Version 4+)
 
 Input Parameter:
-    --fastq      Input PE read file wildcard (default: "*_{1,2}.fastq.gz")
+
+   --fastq      Input PE read file wildcard (default: "*_{1,2}.fastq.gz")
                 
-    --ref        Reference genome for alignment. Must match genome used
-                 in --database (default: k96243.fasta)
+   --ref        Reference genome for alignment. Must match genome used
+                in --database (default: k96243.fasta)
                 
 Optional Parameters:
+
   --annotation   Optionally output annotated variant tables.
                  If you want to annotate the variant output then
                  set this parameter to the name of the variant file in snpEff
