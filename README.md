@@ -11,7 +11,8 @@ SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/Derek
 - [Usage](#usage)
 - [Parameters](#parameters)
 - [Important Information](#important-information)
-- [GWAS and SPANDx](gWAS-and-spandx)
+- [mGWAS and SPANDx](#mGWAS-and-spandx)
+- [How to find a snpEff database] (#How-to-find-a-snpEff-database)
 - [Citation](#citation)
 
 ## Updates
@@ -224,7 +225,7 @@ All variants identified in the single genome analysis are merged and re-verified
 
 Finally, SPANDx merges high-quality, re-verified SNP and indel variants into user-friendly .nex matrices, which can be used for phylogenetic resconstruction using various phylogenetics tools (e.g. PAUP, PHYLIP, RAxML).
 
-## GWAS and SPANDx
+## mGWAS and SPANDx
 
 The main comparative outputs of SPANDx (SNP matrix, indel matrix, presence/absence matrix, annotated SNP matrix and annotated indel matrix in $PWD/Outputs/Comparative/) can be used as input files for mGWAS. From version 2.6 onwards, SPANDx is distributed with GeneratePlink&#46;sh. The GeneratePlink&#46;sh script requires two input files: an ingroup.txt file and an outgroup.txt file. The ingroup.txt file should contain a list of the taxa of interest (e.g. antibiotic-resistant strains) and the outgroup.txt file should contain a list of all taxa lacking the genotype or phenotype of interest (e.g. antibiotic-sensitive strains). The ingroup.txt and outgroup.txt files must include only one strain per line. Although larger taxon numbers in the ingroup and outgroup files will increase the statistical power of mGWAS, it is better to only include relevant taxa i.e. do not include taxa that have not yet been characterised, or that have equivocal data. The GeneratePlink&#46;sh script will generate .ped and .map files for SNPs, and presence/absence loci and indels if these were identified in the initial analyses. The .ped and .map files can be directly imported into PLINK. For more information on mGWAS and how to run PLINK, please refer to the [PLINK website](http://pngu.mgh.harvard.edu/~purcell/plink/)
 
@@ -241,6 +242,12 @@ Comparing microbial genomes with the above methods will test for associations wi
 GeneratePLINK_Roary.sh -i ingroup.txt -o outgroup.txt -r Roary.csv output (if different than the default gene_presence_absence.csv)
 ```
 **Note that this script has an additional requirement for R and Rscript with the dplyr package installed. If this script can’t find these programs in your path then it will fail**
+
+### How to find a snpEff database
+
+SPANDx is able to annotate all of your variants in a combined matrix that makes searching for specific mutations fairly easy. If you are running SPANDx with an new bacterial species and you are unsure if there is a required satabase for the annotation, you can check to see what exists in snpEff and to see if it is already installed on your system. Post SPANDx v4.0, to see what version of snpEff is being used first load the SPANDx environment ```conda activate spandx``` then ```snpEff databases | grep "Genus_species"```
+
+snpEff has a massive number of databases, so if you are using a published reference sequence, chances are it will already be built. 
 
 ## Citation
 
