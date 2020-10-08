@@ -12,7 +12,7 @@ SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/Derek
 - [Parameters](#parameters)
 - [Important Information](#important-information)
 - [mGWAS and SPANDx](#mGWAS-and-spandx)
-- [How to find a snpEff database] (#How-to-find-a-snpEff-database)
+- [How to find a snpEff database](#How-to-find-a-snpEff-database)
 - [Citation](#citation)
 
 ## Updates
