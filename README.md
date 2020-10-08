@@ -107,67 +107,67 @@ To achieve high-quality variant calls, SPANDx incorporates the following program
 
 Input Parameter:
 
---fastq      
+```--fastq```
 
 Input PE read file wildcard (default: "*_{1,2}.fastq.gz")
                 
---ref        
+```--ref ```       
 
 Reference genome for alignment. Must match genome used in --database (default: k96243.fasta)
                 
 Optional Parameters:
 
---annotation   
+```--annotation  ``` 
   
 Optionally output annotated variant tables. If you want to annotate the variant output then set this parameter to the name of the variant file in snpEff
 (default: false)
                  
---database   
+```--database   ```
 
 If you want to annotate the variant output then set this parameter to the name of the variant file in snpEff
 (default: false)
                 
---phylogeny    
+```--phylogeny ```   
 
 If you would like to switch off phylogenetic reconstruction and just generate a list of SNPs/indels then swith this parameter to false. 
 (default: true)
             
---window    
+```--window    ```
 
 Default window size used in the bedcov coverage assessment
 (default: 1kb)
 
---assemblies   
+```--assemblies  ``` 
 
 Optionally include a directory of assembled genomes in the analysis. Set this parameter to 'true' if you wish to included assembled genomes and place all assembled genomes in a
 subdirectory called 'assemblies'. 
 (default: false)
 
---size      
+```--size    ```  
 
 SPANDx can optionally down-sample your read data to run through the pipeline quicker. Set to 0 to skip downsampling (default: 0). NB the number specified here refers to the number of reads kept in each pair. Genome coverage will vary with genome size and sequence length.
 
---tri_allelic  
+```--tri_allelic  ```
 
 Set to true if you would like tri-allelic SNPs/indels used in the phylogenetic analysis 
 (default: false).
 
---indels
+```--indels```
 
 Set to true if you would like indels used in the phylogenetic analysis 
 (default: false).
 
---mixtures  
+```--mixtures```  
 
 Optionally perform within species mixtures analysis. Set this parameter to 'true' if you are dealing with multiple strains within the same WGS sample 
-(default: false).
+(default: false). Note that this feature is not currently implemented.
 
---structural   
+```--structural```   
 
 Set to true if you would like to identify structural variants Note that this step can take a considerable amount of time if you have deep sequencing data 
 (default: false).
 
---notrim       
+```--notrim```       
 
 Although not generally recommended to switch off, set to true if you want to skip the timmomatic step 
 (default: false).
