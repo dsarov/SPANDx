@@ -69,7 +69,7 @@ conda activate spandx
 
 To run SPANDx, 
 ```
-nextflow run dsarov/spandx.
+nextflow run dsarov/spandx
 ```
 If you are running this pipeline on a HPC/submission system (e.g. PBS) then using the screen command will allow you to detach the terminal while the pipeline is still running in the background## Installation
 
