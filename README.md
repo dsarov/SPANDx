@@ -95,13 +95,20 @@ From v4.0 SPANDx should work with any resource manager and can also be run direc
 
 To achieve high-quality variant calls, SPANDx incorporates the following programs into its workflow:
 
+- ART
 - Burrows Wheeler Aligner (BWA)
+- BEDTools
+- seqtk
+- Trimmomatic
+- Mosdepth
+- Picard
 - SAMTools
 - Picard
 - Genome Analysis Toolkit (GATK)
 - BEDTools
 - SNPEff
 - VCFtools
+- Fasttree
 
 ## Usage (Version 4+)
 
@@ -171,6 +178,8 @@ Set to true if you would like to identify structural variants Note that this ste
 
 Although not generally recommended to switch off, set to true if you want to skip the timmomatic step 
 (default: false).
+
+As a feature of Nextflow, SPANDx can resume a failed run attempt, using the previously generated, intermediate files. To use this feature, add the ```-resume ```flag to the command line when running SPANDx.
 
 If you want to make changes to the default `nextflow.config` file
 clone the workflow into a local directory and change parameters
