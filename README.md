@@ -89,7 +89,7 @@ conda env create --name spandx -f env.yaml
 
 ## Resource Managers
 
-From v4.0 SPANDx should work with any resource manager and can also be run directly without a resource using Nextflow. To specify a specific reource manager, use the --executor flag. E.g. --executor pbspro. For more information see the Nextflow documentation here https://www.nextflow.io/docs/latest/executor.html
+From v4.0 SPANDx should work with any resource manager and can also be run directly without a resource using Nextflow. To specify a specific reource manager, use the`` --executor`` flag. E.g. ```--executor pbspro```. For more information see the Nextflow documentation here https://www.nextflow.io/docs/latest/executor.html
 
 ## SPANDx Workflow
 
