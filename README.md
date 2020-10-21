@@ -120,7 +120,7 @@ Input PE read file wildcard (default: "*_{1,2}.fastq.gz")
                 
 ```--ref ```       
 
-Reference genome for alignment. Must match genome used in --database (default: k96243.fasta)
+Reference genome for alignment. If annotation is requested, then this genome must match the annotated genome that is used by snpEff (i.e. the genome specified by the --database flag)
                 
 Optional Parameters:
 
