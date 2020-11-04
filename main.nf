@@ -73,6 +73,11 @@ Optional Parameters:
 
                  Currently phylogeny is set to $params.phylogeny
 
+  --pairing      Optionally use single-end Illumina data. By default SPANDx expects
+                 paired-end read data.
+
+                 Currently pairing is set to $params.pairing
+
   --window       Default window size used in the bedcov coverage assessment
                  (default: 1kb)
 
@@ -142,7 +147,7 @@ Update to the local cache of this workflow:
 ref=params.ref
 snpeff_database=params.database
 
-
+if( params.pairing == "PE") {
 fastq = Channel
   .fromFilePairs("${params.fastq}", flat: true)
 	.ifEmpty { exit 1, """
@@ -154,6 +159,20 @@ To fix this error either rename your reads to match this formatting or specify t
 when initializing SPANDx e.g. --fastq "*_{1,2}_sequence.fastq.gz"
 
   """ }
+} else {
+fastq = Channel
+.fromFile("${params.fastq}", flat: true)
+.ifEmpty { exit 1, """
+
+Input read files could not be found.
+Have you included the read files in the current directory and do they have the correct naming?
+With the parameters specified, SPANDx is looking for reads named ${params.fastq}.
+To fix this error either rename your reads to match this formatting or specify the desired format
+when initializing SPANDx e.g. --fastq "*_1_sequence.fastq.gz"
+
+""" }
+}
+
 
 reference_file = file(params.ref)
 if( !reference_file.exists() ) {
@@ -257,10 +276,10 @@ if (params.assemblies) {
     mv ${assembly.baseName}_out2.fq ${assembly.baseName}_2_cov.fq
     gzip ${assembly.baseName}_1_cov.fq
     gzip ${assembly.baseName}_2_cov.fq
-
     """
+    }
   }
-}
+
 
 /*
 =======================================================================
@@ -274,62 +293,195 @@ Part 2: read processing, reference alignment and variant identification
    Part 2A: Trim reads with light quality filter and remove adapters
 =======================================================================
 */
-process Trimmomatic {
+if( params.pairing == "PE") {
+  process Trimmomatic {
 
-    label "spandx_default"
-    tag {"$id"}
+      label "spandx_default"
+      tag {"$id"}
 
-    input:
-    set id, file(forward), file(reverse) from fastq
+      input:
+      set id, file(forward), file(reverse) from fastq
 
-    output:
-    set id, "${id}_1.fq.gz", "${id}_2.fq.gz" into downsample
+      output:
+      set id, "${id}_1.fq.gz", "${id}_2.fq.gz" into downsample
 
-    script:
-    if (params.notrim) {
-      """
-      mv ${forward} ${id}_1.fq.gz
-      mv ${reverse} ${id}_2.fq.gz
-      """
-    } else {
-      """
-      trimmomatic PE -threads $task.cpus ${forward} ${reverse} \
-      ${id}_1.fq.gz ${id}_1_u.fq.gz ${id}_2.fq.gz ${id}_2_u.fq.gz \
-      ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
-      LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
-      """
+      script:
+      if (params.notrim) {
+        """
+        mv ${forward} ${id}_1.fq.gz
+        mv ${reverse} ${id}_2.fq.gz
+        """
+      } else {
+        """
+        trimmomatic PE -threads $task.cpus ${forward} ${reverse} \
+        ${id}_1.fq.gz ${id}_1_u.fq.gz ${id}_2.fq.gz ${id}_2_u.fq.gz \
+        ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
+        LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
+        """
+    }
   }
-}
 /*
 =======================================================================
               Part 2B: Downsample reads to increase speed
 =======================================================================
 */
-process Downsample {
+  process Downsample {
 
-    label "spandx_default"
-    tag { "$id" }
-    publishDir "./Clean_reads", mode: 'copy', overwrite: false
+      label "spandx_default"
+      tag { "$id" }
+      publishDir "./Clean_reads", mode: 'copy', overwrite: false
+
+      input:
+      set id, file(forward), file(reverse) from downsample
+
+      output:
+      set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment, alignmentCARD)
+
+      script:
+      if (params.size > 0) {
+        """
+        seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
+        seqtk sample -s 11 ${reverse} $params.size | gzip - > ${id}_2_cov.fq.gz
+        """
+       } else {
+            // Rename files if not downsampled and feed into alignment channel
+        """
+        mv ${forward} ${id}_1_cov.fq.gz
+        mv ${reverse} ${id}_2_cov.fq.gz
+        """
+    }
+  }
+
+}
+
+
+/*
+=======================================================================
+               Part 2C: Align reads against the reference
+=======================================================================
+*/
+  process ReferenceAlignment {
+
+    label "spandx_alignment"
+    tag {"$id"}
 
     input:
-    set id, file(forward), file(reverse) from downsample
+    file ref_index from ref_index_ch
+    set id, file(forward), file(reverse) from alignment // Reads
 
     output:
-    set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment, alignmentCARD)
+    set id, file("${id}.bam"), file("${id}.bam.bai") into dup
 
-    script:
-    if (params.size > 0) {
-      """
-      seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
-      seqtk sample -s 11 ${reverse} $params.size | gzip - > ${id}_2_cov.fq.gz
-      """
-     } else {
-            // Rename files if not downsampled and feed into alignment channel
-      """
-      mv ${forward} ${id}_1_cov.fq.gz
-      mv ${reverse} ${id}_2_cov.fq.gz
-      """
+    """
+    bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
+    -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
+    samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+    samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
+    samtools index ${id}.bam
+    """
+
+}
+} else {
+
+
+  /*
+  =======================================================================
+  Part 2: read processing, reference alignment and variant identification
+  =======================================================================
+  // Variant calling sub-workflow - basically SPANDx with a tonne of updates
+  // Careful here, not sure if the output overwrites the symlinks
+  // created by Nextflow (if input is .fq.gz) and would do weird stuff?
+
+  =======================================================================
+     Part 2A: Trim reads with light quality filter and remove adapters
+  =======================================================================
+  */
+
+    process Trimmomatic {
+
+        label "spandx_default"
+        tag {"$id"}
+
+        input:
+        set id, file(forward) from fastq
+
+        output:
+        set id, "${id}_1.fq.gz" into downsample
+
+        script:
+        if (params.notrim) {
+          """
+          mv ${forward} ${id}_1.fq.gz
+          """
+        } else {
+          """
+          trimmomatic SE -threads $task.cpus ${forward} \
+          ${id}_1.fq.gz ${id}_1_u.fq.gz \
+          ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
+          LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
+          """
+      }
+    }
+  /*
+  =======================================================================
+                Part 2B: Downsample reads to increase speed
+  =======================================================================
+  */
+    process Downsample {
+
+        label "spandx_default"
+        tag { "$id" }
+        publishDir "./Clean_reads", mode: 'copy', overwrite: false
+
+        input:
+        set id, file(forward) from downsample
+
+        output:
+        set id, file("${id}_1_cov.fq.gz") into (alignment, alignmentCARD)
+
+        script:
+        if (params.size > 0) {
+          """
+          seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
+          """
+         } else {
+              // Rename files if not downsampled and feed into alignment channel
+          """
+          mv ${forward} ${id}_1_cov.fq.gz
+          """
+      }
+    }
+
   }
+
+
+  /*
+  =======================================================================
+                 Part 2C: Align reads against the reference
+  =======================================================================
+  */
+    process ReferenceAlignment {
+
+      label "spandx_alignment"
+      tag {"$id"}
+
+      input:
+      file ref_index from ref_index_ch
+      set id, file(forward) from alignment // Reads
+
+      output:
+      set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+
+      """
+      bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
+      -t $task.cpus ref ${forward} > ${id}.sam
+      samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+      samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
+      samtools index ${id}.bam
+      """
+
+
+
 }
 
 /*
@@ -359,35 +511,8 @@ if (params.assemblies) {
     """
 
   }
-} else {
-
-/*
-=======================================================================
-               Part 2C: Align reads against the reference
-=======================================================================
-*/
-  process ReferenceAlignment {
-
-    label "spandx_alignment"
-    tag {"$id"}
-
-    input:
-    file ref_index from ref_index_ch
-    set id, file(forward), file(reverse) from alignment // Reads
-
-    output:
-    set id, file("${id}.bam"), file("${id}.bam.bai") into dup
-
-    """
-    bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
-    -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
-    samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
-    samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
-    samtools index ${id}.bam
-    """
-
-  }
 }
+
 /*
 =======================================================================
                        Part 2D: De-duplicate bams
