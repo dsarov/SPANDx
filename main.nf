@@ -161,7 +161,7 @@ when initializing SPANDx e.g. --fastq "*_{1,2}_sequence.fastq.gz"
   """ }
 } else {
 fastq = Channel
-.fromFile("${params.fastq}", flat: true)
+.fromPath("${params.fastq}")
 .ifEmpty { exit 1, """
 
 Input read files could not be found.
@@ -171,6 +171,10 @@ To fix this error either rename your reads to match this formatting or specify t
 when initializing SPANDx e.g. --fastq "*_1_sequence.fastq.gz"
 
 """ }
+.map { file ->
+      def id = file.name.toString().tokenize('_').get(0)
+      return tuple(id, file)
+    }
 }
 
 
@@ -197,11 +201,9 @@ if(params.annotation) {
     """
     bash Check_and_DL_SnpEff_database.sh ${params.database} ${baseDir} ${ref}
     """
-
-
   }
+ }  else {
 
-   }  else {
      exit 1, """
      SPANDx requires a snpEff database to be specified for the annotation to work correctly
      Please use the --database flag to specific a snpEff database compatable with your
@@ -210,9 +212,7 @@ if(params.annotation) {
      Please make sure the snpEff version matches the database version.
      """
    }
-
-
-  }
+}
 
 //load in assemblies
 
@@ -277,8 +277,8 @@ if (params.assemblies) {
     gzip ${assembly.baseName}_1_cov.fq
     gzip ${assembly.baseName}_2_cov.fq
     """
-    }
   }
+}
 
 
 /*
@@ -352,8 +352,6 @@ if( params.pairing == "PE") {
     }
   }
 
-}
-
 
 /*
 =======================================================================
@@ -379,11 +377,9 @@ if( params.pairing == "PE") {
     samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
     samtools index ${id}.bam
     """
+  }
 
-}
 } else {
-
-
   /*
   =======================================================================
   Part 2: read processing, reference alignment and variant identification
@@ -397,7 +393,7 @@ if( params.pairing == "PE") {
   =======================================================================
   */
 
-    process Trimmomatic {
+    process Trimmomatic_SE {
 
         label "spandx_default"
         tag {"$id"}
@@ -406,7 +402,7 @@ if( params.pairing == "PE") {
         set id, file(forward) from fastq
 
         output:
-        set id, "${id}_1.fq.gz" into downsample
+        set id, file("${id}_1.fq.gz") into downsample
 
         script:
         if (params.notrim) {
@@ -427,7 +423,7 @@ if( params.pairing == "PE") {
                 Part 2B: Downsample reads to increase speed
   =======================================================================
   */
-    process Downsample {
+    process Downsample_SE {
 
         label "spandx_default"
         tag { "$id" }
@@ -452,15 +448,12 @@ if( params.pairing == "PE") {
       }
     }
 
-  }
-
-
   /*
   =======================================================================
                  Part 2C: Align reads against the reference
   =======================================================================
   */
-    process ReferenceAlignment {
+    process ReferenceAlignment_SE {
 
       label "spandx_alignment"
       tag {"$id"}
@@ -479,11 +472,9 @@ if( params.pairing == "PE") {
       samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
       samtools index ${id}.bam
       """
-
-
+    }
 
 }
-
 /*
 =======================================================================
         Part 2C: Align reads against the reference with assemblies
