@@ -488,7 +488,7 @@ if (params.assemblies) {
 
     input:
     file ref_index from ref_index_ch
-    set id, file(forward), file(reverse) from alignment.mix(alignment_assembly) // Reads
+    set id, file(forward), file(reverse) from alignment_assembly // alignment.mix(alignment_assembly) // Reads
 
     output:
     set id, file("${id}.bam"), file("${id}.bam.bai") into dup
