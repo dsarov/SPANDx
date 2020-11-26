@@ -491,7 +491,7 @@ if (params.assemblies) {
     set id, file(forward), file(reverse) from alignment_assembly // alignment.mix(alignment_assembly) // Reads
 
     output:
-    set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+    set id, file("${id}.bam"), file("${id}.bam.bai") into dup_ass
 
     """
     bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
@@ -517,6 +517,7 @@ process Deduplicate {
 
     input:
     set id, file(bam_alignment), file(bam_index) from dup
+    set id, file(bam_alignment), file(bam_index) from dup_ass
 
     output:
     set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") into (averageCoverage, variantCalling, mixturePindel, variantcallingGVCF_ch)
