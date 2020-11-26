@@ -221,7 +221,7 @@ if (params.assemblies) {
     .fromPath("${params.assembly_loc}", checkIfExists: true)
     .ifEmpty {"No assembled genomes will be processed"}
     .map { file ->
-      def id = file.name.toString().tokenize('_').get(0)
+      def id = file.name.toString().tokenize('.').get(0)
       return tuple(id, file)
     }
 }
