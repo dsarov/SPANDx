@@ -262,20 +262,20 @@ process IndexReference {
 if (params.assemblies) {
   process Read_synthesis {
     label "spandx_default"
-    tag {"$assembly.baseName"}
+    tag {"$id"}
 
     input:
     set id, file(assembly) from assembly_ch
 
     output:
-    set id, file("${assembly.baseName}_1_cov.fq.gz"), file("${assembly.baseName}_2_cov.fq.gz") into (alignment_assembly)
+    set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment_assembly)
 
     """
-    art_illumina -i ${assembly} -p -l 150 -f 30 -m 500 -s 10 -ss HS25 -na -o ${assembly.baseName}_out
-    mv ${assembly.baseName}_out1.fq ${assembly.baseName}_1_cov.fq
-    mv ${assembly.baseName}_out2.fq ${assembly.baseName}_2_cov.fq
-    gzip ${assembly.baseName}_1_cov.fq
-    gzip ${assembly.baseName}_2_cov.fq
+    art_illumina -i ${assembly} -p -l 150 -f 30 -m 500 -s 10 -ss HS25 -na -o ${id}_out
+    mv ${id}_out1.fq ${id}_1_cov.fq
+    mv ${id}_out2.fq ${id}_2_cov.fq
+    gzip ${id}_1_cov.fq
+    gzip ${id}_2_cov.fq
     """
   }
 }
