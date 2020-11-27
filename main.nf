@@ -3,7 +3,7 @@
 /*
  *
  *  Pipeline            NF-SPANDx
- *  Version             v4.0.1
+ *  Version             v4.0.2
  *  Description         A comparative genomics pipeline
  *  Authors             Derek Sarovich, Erin Price
  *
@@ -12,7 +12,7 @@
 log.info """
 ================================================================================
                            NF-SPANDx
-                             v4.0.1
+                             v4.0.2
 ================================================================================
 
 Thanks for using SPANDx!!
@@ -404,8 +404,8 @@ process ReferenceAlignment_assembly {
     """
   }
 
-} else {
-  /*
+}
+} else {  /*
   =======================================================================
   Part 2: read processing, reference alignment and variant identification
   =======================================================================
@@ -472,7 +472,6 @@ process ReferenceAlignment_assembly {
           """
       }
     }
-
   /*
   =======================================================================
                  Part 2C: Align reads against the reference
