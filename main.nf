@@ -268,7 +268,7 @@ if (params.assemblies) {
     set id, file(assembly) from assembly_ch
 
     output:
-    set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into alignment
+    set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into alignment_assembly
 
     """
     art_illumina -i ${assembly} -p -l 150 -f 30 -m 500 -s 10 -ss HS25 -na -o ${id}_out
@@ -358,6 +358,30 @@ if( params.pairing == "PE") {
                Part 2C: Align reads against the reference
 =======================================================================
 */
+if (params.assemblies) {
+process ReferenceAlignment_assembly {
+
+  label "spandx_alignment"
+  tag {"$id"}
+
+  input:
+  file ref_index from ref_index_ch
+  set id, file(forward), file(reverse) from alignment.mix(alignment_assembly)
+
+  output:
+  set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+
+  """
+  bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
+  -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
+  samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+  samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
+  samtools index ${id}.bam
+  rm ${id}.sam ${id}.bam_tmp
+  """
+
+}
+} else {
   process ReferenceAlignment {
 
     label "spandx_alignment"
