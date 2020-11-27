@@ -268,7 +268,7 @@ if (params.assemblies) {
     set id, file(assembly) from assembly_ch
 
     output:
-    set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment_assembly)
+    set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into alignment
 
     """
     art_illumina -i ${assembly} -p -l 150 -f 30 -m 500 -s 10 -ss HS25 -na -o ${id}_out
@@ -335,7 +335,7 @@ if( params.pairing == "PE") {
       set id, file(forward), file(reverse) from downsample
 
       output:
-      set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment, alignmentCARD)
+      set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment)
 
       script:
       if (params.size > 0) {
@@ -434,7 +434,7 @@ if( params.pairing == "PE") {
         set id, file(forward) from downsample
 
         output:
-        set id, file("${id}_1_cov.fq.gz") into (alignment, alignmentCARD)
+        set id, file("${id}_1_cov.fq.gz") into alignment
 
         script:
         if (params.size > 0) {
@@ -476,35 +476,6 @@ if( params.pairing == "PE") {
     }
 
 }
-/*
-=======================================================================
-        Part 2C: Align reads against the reference with assemblies
-=======================================================================
-*/
-if (params.assemblies) {
-  process ReferenceAlignment_assembly {
-
-    label "spandx_alignment"
-    tag {"$id"}
-
-    input:
-    file ref_index from ref_index_ch
-    set id, file(forward), file(reverse) from alignment_assembly // alignment.mix(alignment_assembly) // Reads
-
-    output:
-    set id, file("${id}.bam"), file("${id}.bam.bai") into dup_ass
-
-    """
-    bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
-    -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
-    samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
-    samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
-    samtools index ${id}.bam
-    rm ${id}.sam ${id}.bam_tmp
-    """
-
-  }
-}
 
 /*
 =======================================================================
@@ -519,7 +490,7 @@ process Deduplicate {
 
     input:
     set id, file(bam_alignment), file(bam_index) from dup
-    set id, file(bam_alignment_ass), file(bam_index_ass) from dup_ass
+    // file("*.raw.gvcf") from gvcf_files.collect()
 
     output:
     set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") into (averageCoverage, variantCalling, mixturePindel, variantcallingGVCF_ch)
