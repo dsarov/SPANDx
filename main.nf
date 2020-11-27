@@ -927,7 +927,6 @@ if (params.phylogeny) {
 
 workflow.onComplete {
 	println ( workflow.success ? "\nDone! Result files are in --> ./Outputs\n \
-  Antibiotic resistance reports are in --> ./Outputs/AbR_reports\n \
   If further analysis is required, bam alignments are in --> ./Outputs/bams\n \
   Phylogenetic tree and annotated merged variants are in --> ./Outputs/Phylogeny_and_annotation\n \
   Individual variant files are in --> ./Outputs/Variants/VCFs\n" \
