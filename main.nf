@@ -376,6 +376,7 @@ if( params.pairing == "PE") {
     samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
     samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
     samtools index ${id}.bam
+    rm ${id}.sam ${id}.bam_tmp
     """
   }
 
@@ -499,6 +500,7 @@ if (params.assemblies) {
     samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
     samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
     samtools index ${id}.bam
+    rm ${id}.sam ${id}.bam_tmp
     """
 
   }
@@ -517,7 +519,7 @@ process Deduplicate {
 
     input:
     set id, file(bam_alignment), file(bam_index) from dup
-    set id, file(bam_alignment), file(bam_index) from dup_ass
+    set id, file(bam_alignment_ass), file(bam_index_ass) from dup_ass
 
     output:
     set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") into (averageCoverage, variantCalling, mixturePindel, variantcallingGVCF_ch)
