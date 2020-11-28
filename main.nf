@@ -317,6 +317,7 @@ if( params.pairing == "PE") {
         ${id}_1.fq.gz ${id}_1_u.fq.gz ${id}_2.fq.gz ${id}_2_u.fq.gz \
         ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
         LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
+        rm ${id}_1_u.fq.gz ${id}_2_u.fq.gz
         """
     }
   }
@@ -452,7 +453,7 @@ process ReferenceAlignment_assembly {
 
         label "spandx_default"
         tag { "$id" }
-        publishDir "./Clean_reads", mode: 'copy', overwrite: false
+      //  publishDir "./Clean_reads", mode: 'copy', overwrite: false
 
         input:
         set id, file(forward) from downsample
@@ -495,6 +496,7 @@ process ReferenceAlignment_assembly {
       samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
       samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
       samtools index ${id}.bam
+      rm ${id}.sam
       """
     }
 
@@ -509,7 +511,7 @@ process Deduplicate {
 
     label "spandx_default"
     tag { "$id" }
-    publishDir "./Outputs/bams", mode: 'copy', overwrite: false
+    publishDir "./Outputs/bams", mode: 'copy', overwrite: true
 
     input:
     set id, file(bam_alignment), file(bam_index) from dup
@@ -581,7 +583,7 @@ if (params.mixtures) {
 
     label "spandx_gatk"
     tag { "$id" }
-    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: false
+    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
     input:
     file reference from reference_file
@@ -611,7 +613,7 @@ if (params.mixtures) {
 
       label "spandx_snpeff"
       tag { "$id" }
-      publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: false
+      publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
       input:
       set id, file("${id}.PASS.snps.indels.mixed.vcf") from filteredMixture
@@ -702,7 +704,7 @@ if (params.mixtures) {
 
     label "spandx_gatk"
     tag { "$id" }
-    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: false
+    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
     input:
     file reference from reference_file
@@ -744,7 +746,7 @@ if (params.mixtures) {
 
     label "spandx_gatk"
     tag { "$id" }
-    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: false
+    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
     input:
     file reference from reference_file
@@ -786,7 +788,7 @@ if (params.mixtures) {
 
       label "spandx_snpeff"
       tag { "$id" }
-      publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: false
+      publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
       input:
       set id, file(snp_pass), file(snp_fail) from filteredSNPs
@@ -813,7 +815,7 @@ if (params.mixtures) {
 
     label "spandx_snpeff"
     tag { "$id" }
-    publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: false
+    publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
     input:
     set id, file(indel_pass), file(indel_fail) from filteredIndels
@@ -843,7 +845,7 @@ if (params.mixtures) {
 process Merge_bedcov {
   label "bedcov"
   tag { "$id" }
-  publishDir "./Outputs/Coverage", mode: 'copy', overwrite: false
+  publishDir "./Outputs/Coverage", mode: 'copy', overwrite: true
 
   input:
   file("*.bedcov") from bedcov_files.collect()
@@ -863,7 +865,7 @@ if (params.phylogeny) {
 
     label "spandx_gatk"
     tag { "$id" }
-    publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: false, pattern: '*.gvcf'
+    publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
 
     input:
     file reference from reference_file
@@ -885,7 +887,7 @@ if (params.phylogeny) {
   process Master_vcf {
     label "master_vcf"
     //tag { "$id" }
-    publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: false
+    publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: true
 
     input:
     file("*.raw.gvcf") from gvcf_files.collect()
@@ -910,7 +912,7 @@ if (params.phylogeny) {
   if (params.annotation) {
     process snp_matrix {
       label "SNP_matrix"
-      publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: false
+      publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: true
 
       input:
       set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
@@ -929,7 +931,7 @@ if (params.phylogeny) {
  } else {
    process snp_matrix_no_annotate {
       label "SNP_matrix"
-      publishDir "./Outputs/Phylogeny", mode: 'copy', overwrite: false
+      publishDir "./Outputs/Phylogeny", mode: 'copy', overwrite: true
 
       input:
       set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
