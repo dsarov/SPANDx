@@ -330,7 +330,7 @@ if( params.pairing == "PE") {
 
       label "spandx_default"
       tag { "$id" }
-      publishDir "./Clean_reads", mode: 'copy', overwrite: false
+    //  publishDir "./Clean_reads", mode: 'copy', overwrite: false
 
       input:
       set id, file(forward), file(reverse) from downsample
@@ -547,10 +547,7 @@ process ReferenceCoverage {
     """
     bedtools coverage -a ${refcov} -b ${dedup_bam} > ${id}.bedcov
     """
-    //mosdepth --by ${refcov} output ${dedup_bam}
-    //sum_depth=\$(zcat output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
-    //total_chromosomes=\$(zcat output.regions.bed.gz | awk '{print \$4}' | wc -l)
-    //echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
+
 }
 /*
 =======================================================================
@@ -594,8 +591,6 @@ if (params.mixtures) {
     output:
     set id, file("${id}.PASS.snps.indels.mixed.vcf") into filteredMixture
 
-    // Not sure if I overlooked something, but no FAIL here
-
     """
     gatk VariantFiltration -R ${reference} -O ${id}.snps.indels.filtered.mixed.vcf -V $variants \
     -filter "MQ < $params.MQ_SNP" --filter-name "MQFilter" \
@@ -625,11 +620,6 @@ if (params.mixtures) {
       """
       snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
       """
-
-      //If database isn't found then check the local directory
-    //  """
-    //  snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
-    //  """
       }
   }
 
@@ -670,7 +660,7 @@ if (params.mixtures) {
 
 } else {
 
-    // Not a mixture
+    //Not a mixture
     //To do split GVCF calling when phylogeny isn't called
 
     process VariantCalling {
@@ -801,10 +791,6 @@ if (params.mixtures) {
       """
       snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
-      //if not found look in the non-default location
-      //  """
-      //  snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff  $snp_pass > ${id}.PASS.snps.annotated.vcf
-      //  """
 
     }
 
@@ -827,10 +813,7 @@ if (params.mixtures) {
     """
     snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
     """
-    //if not found look in the non-default location
-    //"""
-    //snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v -dataDir ${baseDir}/resources/snpeff $snpeff_database $indel_pass > ${id}.PASS.indels.annotated.vcf
-    //"""
+
   }
  }
 }
@@ -874,10 +857,9 @@ if (params.phylogeny) {
     set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") from variantcallingGVCF_ch
 
     output:
-    //set id, file("${id}.raw.snps.indels.mixed.vcf"), file("${id}.raw.snps.indels.mixed.vcf.idx") into mixtureFilter
     set id, file("${id}.raw.gvcf")
 	  file("${id}.raw.gvcf") into gvcf_files
-    //val true into gvcf_complete_ch
+
 
     """
     gatk HaplotypeCaller -R ${reference} -ERC GVCF --I ${id}.dedup.bam -O ${id}.raw.gvcf
@@ -886,7 +868,6 @@ if (params.phylogeny) {
 
   process Master_vcf {
     label "master_vcf"
-    //tag { "$id" }
     publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: true
 
     input:
@@ -920,7 +901,7 @@ if (params.phylogeny) {
       output:
       file("Ortho_SNP_matrix.nex")
       file("MP_phylogeny.tre")
-      file("ML_phylogeny.tre") //need to count taxa to tell this to not be expected if ntaxa is < 4
+      file("ML_phylogeny.tre")
       file("All_SNPs_indels_annotated.txt")
 
       script:
@@ -939,7 +920,7 @@ if (params.phylogeny) {
       output:
       file("Ortho_SNP_matrix.nex")
       file("MP_phylogeny.tre")
-      file("ML_phylogeny.tre") //need to count taxa to tell this to not be expected if ntaxa is < 4
+      file("ML_phylogeny.tre")
 
 
       script:
