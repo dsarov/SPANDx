@@ -848,7 +848,7 @@ if (params.phylogeny) {
 
     label "spandx_gatk"
     tag { "$id" }
-    publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
+    //publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
 
     input:
     file reference from reference_file
