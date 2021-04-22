@@ -38,6 +38,12 @@ SPANDx is available on our development channel and its dependencies can be insta
 ```
 conda install -c dsarov -c bioconda spandx
 ```
+
+Update to the latest version from github
+```
+nextflow pull dsarov/spandx
+```
+
 The pipeline itself is run with Nextflow from a local cache of the repository:
 ```
 nextflow run dsarov/spandx
