@@ -63,7 +63,7 @@ Make sure you have the conda package manager installed (e.g. Anaconda, miniconda
 
 Create a new environment with conda called "spandx" and install the software with 
 ```
-conda create --name spandx -c dsarov -c bioconda -c conda-forge spandx
+conda create --name spandx -c dsarov -c bioconda spandx
 ```
 Follow the instructions and the software should fully install with all dependencies.
 
