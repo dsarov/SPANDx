@@ -36,7 +36,7 @@ SPANDx is a pipeline for identifying SNP and indel variants in haploid genomes u
 Short version for those that just want to get started and understand how environments in conda work
 SPANDx is available on our development channel and its dependencies can be installed with:
 ```
-conda install -c dsarov -c bioconda -c conda-forge spandx
+conda install -c dsarov -c bioconda spandx
 ```
 The pipeline itself is run with Nextflow from a local cache of the repository:
 ```
