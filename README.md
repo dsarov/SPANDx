@@ -90,7 +90,7 @@ git clone https://github.com/dsarov/SPANDx.git
 2) Install a spandx environment using conda
 
 ```
-conda env create --name spandx -f env.yaml
+conda env create --name spandx -f ./SPANDx/env.yaml
 ```
 
 ## Resource Managers
