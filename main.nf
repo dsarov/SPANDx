@@ -521,7 +521,7 @@ process Deduplicate {
     set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") into (averageCoverage, variantCalling, mixturePindel, variantcallingGVCF_ch)
 
     """
-    gatk MarkDuplicates -I "${id}.bam" -O ${id}.dedup.bam --REMOVE_DUPLICATES true \
+    gatk --java-options -Xmx${task.memory.toString().replaceAll(/[\sB]/,'')} MarkDuplicates -I "${id}.bam" -O ${id}.dedup.bam --REMOVE_DUPLICATES true \
     --METRICS_FILE ${id}.dedup.txt --VALIDATION_STRINGENCY LENIENT
     samtools index ${id}.dedup.bam
     """
