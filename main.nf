@@ -313,7 +313,7 @@ if( params.pairing == "PE") {
         """
       } else {
         """
-        trimmomatic PE -threads $task.cpus ${forward} ${reverse} \
+        trimmomatic PE -threads 1 ${forward} ${reverse} \
         ${id}_1.fq.gz ${id}_1_u.fq.gz ${id}_2.fq.gz ${id}_2_u.fq.gz \
         ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
         LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
@@ -437,7 +437,7 @@ process ReferenceAlignment_assembly {
           """
         } else {
           """
-          trimmomatic SE -threads $task.cpus ${forward} \
+          trimmomatic SE -threads 1 ${forward} \
           ${id}_1.fq.gz ${id}_1_u.fq.gz \
           ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
           LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
