@@ -545,7 +545,7 @@ process ReferenceCoverage {
     file("${id}.bedcov") into bedcov_files
 
     """
-    bedtools coverage -a ${refcov} -b ${dedup_bam} > ${id}.bedcov
+    bedtools coverage -sorted -a ${refcov} -b ${dedup_bam} > ${id}.bedcov
     """
 
 }
