@@ -49,7 +49,7 @@ conda env create --name spandx -f ./SPANDx/env.yaml
 ```
 **Conda**
 
-Short version for those that just want to get started and understand how environments in conda work
+Short version for those that just want to get started and understand how environments in conda work.
 Note that a recent change in the conda-forge channel means this method will likely fail until I can fix the issues.
 SPANDx is available on our development channel and its dependencies can be installed with:
 ```
