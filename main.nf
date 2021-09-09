@@ -728,7 +728,7 @@ if (params.mixtures) {
 
     header=`grep -n "#CHROM" ${id}.failed.snps.vcf | cut -d':' -f 1`
 		head -n "\$header" ${id}.failed.snps.vcf > snp_head
-		cat ${id}.filtered.snps.vcf | grep FAIL | cat snp_head - > ${id}.FAIL.snps.vcf
+		cat ${id}.failed.snps.vcf | grep FAIL | cat snp_head - > ${id}.FAIL.snps.vcf
     """
   }
 
@@ -767,7 +767,7 @@ if (params.mixtures) {
 
     header=`grep -n "#CHROM" ${id}.failed.indels.vcf | cut -d':' -f 1`
 		head -n "\$header" ${id}.failed.indels.vcf > indel_head
-		cat ${id}.filtered.indels.vcf | grep FAIL | cat indel_head - > ${id}.FAIL.indels.vcf
+		cat ${id}.failed.indels.vcf | grep FAIL | cat indel_head - > ${id}.FAIL.indels.vcf
     """
   }
 
