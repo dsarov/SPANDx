@@ -662,7 +662,8 @@ if (params.mixtures) {
 
       for f in pindel.out_*; do
         pindel2vcf -r ${reference} -R ${reference.baseName} -d ARDaP -p \$f -v \${f}.vcf -e 5 -is 15 -as 50000
-        if (params.annoate) {
+        if (params.annotate) {
+
           snpEff eff -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} \${f}.vcf > \${f}.vcf.annotated
         }
       done
