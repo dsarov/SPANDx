@@ -39,13 +39,13 @@ SPANDx is a pipeline for identifying SNP and indel variants in haploid genomes u
 1) Download the latest installation with git clone and install into a directory called SPANDx
 
 ```
-git clone https://github.com/dsarov/SPANDx.git ./SPANDx
+git clone https://github.com/dsarov/SPANDx.git ./spandx
 ```
 
 2) Install a spandx environment using conda
 
 ```
-conda env create --name spandx -f ./SPANDx/env.yaml
+conda env create --name spandx -f ./spandx/env.yaml
 ```
 **Conda**
 
@@ -92,7 +92,7 @@ conda activate spandx
 
 To run SPANDx, 
 ```
-nextflow run /path/to/SPANDx/main.nf
+nextflow run /path/to/spandx/main.nf
 ```
 or
 ```
@@ -190,7 +190,12 @@ Set to true if you would like to identify structural variants Note that this ste
 
 ```--notrim```       
 
-Although not generally recommended to switch off, set to true if you want to skip the timmomatic step 
+Although not generally recommended to switch off, set to true if you want to skip the trimmomatic step 
+(default: false).
+
+```--unaligned```
+
+Optionally output unaligned reads. Useful for identifying accessory genome in comparison to a reference or removing unwanted contamination from raw read data
 (default: false).
 
 As a feature of Nextflow, SPANDx can resume a failed run attempt, using the previously generated, intermediate files. To use this feature, add the ```-resume ```flag to the command line when running SPANDx.
@@ -268,7 +273,7 @@ GeneratePLINK_Roary.sh -i ingroup.txt -o outgroup.txt -r Roary.csv output (if di
 
 ### How to find a snpEff database
 
-SPANDx is able to annotate all variants in a combined SNP/indel matrix that makes searching for specific mutations easy. If you are running SPANDx with an new bacterial species, and you are unsure if there is a required database for annotation, you can check to see what exists in snpEff and to see if it is already installed on your system. Post SPANDx v4.0, to see what version of snpEff is being used first load the SPANDx environment ```conda activate spandx``` then ```snpEff databases | grep "Genus_species"```
+SPANDx is able to annotate all variants in a combined SNP/indel matrix that makes searching for specific mutations easy. If you are running SPANDx with an new bacterial species, and you are unsure if there is a required database for annotation, you can check to see what exists in snpEff and to see if it is already installed on your system. Post SPANDx v4.0, to see what version of snpEff is being used first load the SPANDx environment ```conda activate spandx``` then ```snpEff databases | grep "Genus_species" | more```
 
 snpEff has a massive number of databases, so if you are using a published reference sequence, chances are it will have an existing database. One caveat is that the chromosome name of the reference fasta file must match that of the snpEff database. The name of the bacterial chromosome is normally '>Chromosome' so the start of the fasta file should be named with >Chromosome rather than the default NCBI naming. If these don't match, you'll get an empty output for the annotated variants. Also as of version 4.0, SPANDx (and snpEff) will try to automatically download and install any new databases requested by the user. Although this generally works, the download may fail and the database may need to be installed manually. Most of the hurdles that we've encountered with automatic installation are due to proxy settings on the host system, not letting snpeEff download and install automatically. This limitation has been addressed in v4.0 but keep this in mind if annotations are not working properly.
 
