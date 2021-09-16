@@ -36,10 +36,10 @@ SPANDx is a pipeline for identifying SNP and indel variants in haploid genomes u
 
 **Github**
 
-1) Download the latest installation with git clone
+1) Download the latest installation with git clone and install into a directory called SPANDx
 
 ```
-git clone https://github.com/dsarov/SPANDx.git
+git clone https://github.com/dsarov/SPANDx.git ./SPANDx
 ```
 
 2) Install a spandx environment using conda
@@ -91,6 +91,10 @@ conda activate spandx
 ```
 
 To run SPANDx, 
+```
+nextflow run /path/to/SPANDx/main.nf
+```
+or
 ```
 nextflow run dsarov/spandx
 ```
