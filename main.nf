@@ -125,6 +125,12 @@ Optional Parameters:
 
                  Currently notrim is set to $params.notrim
 
+  --unaligned    Optionally output unaligned reads. Useful for identifying
+                 accessory genome in comparison to a reference or removing
+                 unwanted contamination from raw read data (default: false).
+
+                 Currently unaligend is set to $params.unaligned
+
 If you want to make changes to the default `nextflow.config` file
 clone the workflow into a local directory and change parameters
 in `nextflow.config`:
@@ -524,6 +530,13 @@ process Deduplicate {
     gatk --java-options -Xmx${task.memory.toString().replaceAll(/[\sB]/,'')} MarkDuplicates -I "${id}.bam" -O ${id}.dedup.bam --REMOVE_DUPLICATES true \
     --METRICS_FILE ${id}.dedup.txt --VALIDATION_STRINGENCY LENIENT
     samtools index ${id}.dedup.bam
+    if (params.unaligned) {
+      samtools view -b -f 4 -F 264 ${id}.dedup.bam > ${id}.flag_4.bam
+      samtools view -b -f 8 -F 260 ${id}.dedup.bam > ${id}.flag_8.bam
+      samtools view -b -f 12 -F 256 ${id}.dedup.bam > ${id}.flag_12.bam
+      samtools merge -u - ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam | samtools sort -n - ${id}.unmapped.bam
+      rm ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam
+    fi
     """
 }
 /*
