@@ -39,13 +39,13 @@ SPANDx is a pipeline for identifying SNP and indel variants in haploid genomes u
 1) Download the latest installation with git clone and install into a directory called SPANDx
 
 ```
-git clone https://github.com/dsarov/SPANDx.git ./SPANDx
+git clone https://github.com/dsarov/SPANDx.git ./spandx
 ```
 
 2) Install a spandx environment using conda
 
 ```
-conda env create --name spandx -f ./SPANDx/env.yaml
+conda env create --name spandx -f ./spandx/env.yaml
 ```
 **Conda**
 
@@ -92,7 +92,7 @@ conda activate spandx
 
 To run SPANDx, 
 ```
-nextflow run /path/to/SPANDx/main.nf
+nextflow run /path/to/spandx/main.nf
 ```
 or
 ```
@@ -190,7 +190,12 @@ Set to true if you would like to identify structural variants Note that this ste
 
 ```--notrim```       
 
-Although not generally recommended to switch off, set to true if you want to skip the timmomatic step 
+Although not generally recommended to switch off, set to true if you want to skip the trimmomatic step 
+(default: false).
+
+```--unaligned```
+
+Optionally output unaligned reads. Useful for identifying accessory genome in comparison to a reference or removing unwanted contamination from raw read data
 (default: false).
 
 As a feature of Nextflow, SPANDx can resume a failed run attempt, using the previously generated, intermediate files. To use this feature, add the ```-resume ```flag to the command line when running SPANDx.
