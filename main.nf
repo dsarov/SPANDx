@@ -519,6 +519,8 @@ process Deduplicate {
     tag { "$id" }
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.unmapped.bam", overwrite: true
+    publishDir "./Outputs/unmapped_reads", mode: 'copy', pattern: "*fastq*", overwrite: true
+
 
     input:
     set id, file(bam_alignment), file(bam_index) from dup
