@@ -526,6 +526,7 @@ process Deduplicate {
 
     output:
     set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") into (averageCoverage, variantCalling, mixturePindel, variantcallingGVCF_ch)
+    set id, file("${id}.unmapped.bam")
 
     script:
     if (params.unaligned) {
