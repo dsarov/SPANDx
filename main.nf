@@ -539,7 +539,7 @@ process Deduplicate {
     #samtools view -b -f 12 -F 256 ${id}.dedup.bam > ${id}.flag_12.bam
     #samtools merge -u - ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam | samtools sort -n - -o ${id}.unmapped.bam
     #rm ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam
-    bamToFastq -bam ${id}.unmapped.bam -fq1 ${id}_unmapped_1_sequence.fastq -fq2 ${id}_unmapped_2_sequence.fastq
+    bamToFastq -i ${id}.unmapped.bam -fq ${id}_unmapped_1_sequence.fastq -fq2 ${id}_unmapped_2_sequence.fastq
     gzip ${id}_unmapped_1_sequence.fastq
     gzip ${id}_unmapped_2_sequence.fastq
     """
