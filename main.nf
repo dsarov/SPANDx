@@ -536,7 +536,7 @@ process Deduplicate {
     samtools view -b -f 4 -F 264 ${id}.dedup.bam > ${id}.flag_4.bam
     samtools view -b -f 8 -F 260 ${id}.dedup.bam > ${id}.flag_8.bam
     samtools view -b -f 12 -F 256 ${id}.dedup.bam > ${id}.flag_12.bam
-    samtools merge -u - ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam | samtools sort -n - ${id}.unmapped.bam
+    samtools merge -u - ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam | samtools sort -n - -o ${id}.unmapped.bam
     rm ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam
     """
     } else {
