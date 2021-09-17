@@ -539,12 +539,13 @@ process Deduplicate {
     samtools merge -u - ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam | samtools sort -n - ${id}.unmapped.bam
     rm ${id}.flag_4.bam ${id}.flag_8.bam ${id}.flag_12.bam
     """
-    else
+    } else {
     """
     gatk --java-options -Xmx${task.memory.toString().replaceAll(/[\sB]/,'')} MarkDuplicates -I "${id}.bam" -O ${id}.dedup.bam --REMOVE_DUPLICATES true \
     --METRICS_FILE ${id}.dedup.txt --VALIDATION_STRINGENCY LENIENT
     samtools index ${id}.dedup.bam
     """
+
   }
 }
 /*
