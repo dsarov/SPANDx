@@ -517,7 +517,8 @@ process Deduplicate {
 
     label "spandx_default"
     tag { "$id" }
-    publishDir "./Outputs/bams", mode: 'copy', overwrite: true
+    publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup.bam", overwrite: true
+    publishDir "./Outputs/bams", mode: 'copy', pattern: "*.unmapped.bam", overwrite: true
 
     input:
     set id, file(bam_alignment), file(bam_index) from dup
@@ -660,6 +661,7 @@ if (params.mixtures) {
 
       // Pindel + threads to run a bit faster
       // In the original script, there is a pindel.out_INT, here: pindel.out_INT_final
+     // To DO need to fix if statement below to have two seperate code blocks
 
       """
       echo -e "${id}.dedup.bam\t250\tB" > pindel.bam.config
