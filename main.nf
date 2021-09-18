@@ -518,9 +518,11 @@ process Deduplicate {
     label "spandx_default"
     tag { "$id" }
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
+
+    if (params.unaligned) {
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.unmapped.bam", overwrite: true
     publishDir "./Outputs/unmapped_reads", mode: 'copy', pattern: "*fastq.gz", overwrite: true
-
+    }
 
     input:
     set id, file(bam_alignment), file(bam_index) from dup
@@ -528,7 +530,10 @@ process Deduplicate {
 
     output:
     set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") into (averageCoverage, variantCalling, mixturePindel, variantcallingGVCF_ch)
+
+    if (params.unaligned) {
     set id, file("${id}_unmapped_1_sequence.fastq.gz"), file("${id}_unmapped_2_sequence.fastq.gz")
+    }
 
     script:
     if (params.unaligned) {
