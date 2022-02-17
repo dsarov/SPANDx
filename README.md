@@ -277,6 +277,21 @@ SPANDx is able to annotate all variants in a combined SNP/indel matrix that make
 
 snpEff has a massive number of databases, so if you are using a published reference sequence, chances are it will have an existing database. One caveat is that the chromosome name of the reference fasta file must match that of the snpEff database. The name of the bacterial chromosome is normally '>Chromosome' so the start of the fasta file should be named with >Chromosome rather than the default NCBI naming. If these don't match, you'll get an empty output for the annotated variants. Also as of version 4.0, SPANDx (and snpEff) will try to automatically download and install any new databases requested by the user. Although this generally works, the download may fail and the database may need to be installed manually. Most of the hurdles that we've encountered with automatic installation are due to proxy settings on the host system, not letting snpeEff download and install automatically. This limitation has been addressed in v4.0 but keep this in mind if annotations are not working properly.
 
+If the database doesn't exist in snpEff or you'd like to install a database of your own annotated strain, there are extensive instructions in the snpEff manual for different annotations types. I find it easiest if you can download or create a genbank file of the annotated genome and then load taht into snpEff. If you do this just make sure that the genbank file has the sequence information included as well as the annotation. Once you've downloaded (or created) the genbank file, copy it into the snpEff data directory and create a subdirectory with the genome name. Copy the genbank file into this directory and rename it as genes.gbk. Add an entry into the snpEff config file with the name of the genome followed by ".genome : genome_name" e.g. Escherichia_coli_DH5a.genome : Escherichia coli DH5a. Then create a snpfEff database using the same name
+
+```
+snpEff build -genbank Escherichia_coli_DH5a
+```
+To verify:
+```
+snpEff dump Escherichia_coli_DH5a
+```
+And to check the name of the chromosome that should be at the top of your .fasta file
+```
+snpEff dump Escherichia_coli_DH5a | grep Chromosomes -A+2
+```
+
+
 ## Citation
 
 Sarovich DS & Price EP. 2014. SPANDx: a genomics pipeline for comparative analysis of large haploid whole genome re-sequencing datasets. <i>BMC Res Notes</i> 7:618.
