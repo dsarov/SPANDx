@@ -18,7 +18,7 @@ SPANDx was written by Derek Sarovich ([@DerekSarovich](https://twitter.com/Derek
 ## Updates
 
 #### SPANDx 4.0
-As of SPANDx version 4.0 we've completely overhauled the software and added a few cool features. SPANDx now uses Nextflow for job and pipeline management (https://www.nextflow.io/docs/latest/index.html). This means that we no longer use the clunky job management script that had issues running on HPCs with odd resource management systems or strict resource requesting requirements. SPANDx is now mixture aware (!), at least when it comes to SNP identification and annotation. Mixed SNPs will still be excluded from phylogenetic analysis, which is intentional, but can be found in the individual gVCFs/VCFs. We've switched to the GATK 4.0+ and now use gVCFs instead of the standard VCF format. Standard VCFs are still produced but will probably be removed in future versions. We've done away with using paup or RAXML for tree construction and just use Fastree for both ML and MP. Trees are now drawn as part of the pipeline rather than having to do an additional step after the pipeline completes.
+As of SPANDx version 4.0 we've completely overhauled the software and added a few cool features. SPANDx now uses Nextflow for job and pipeline management (https://www.nextflow.io/docs/latest/index.html). This means that we no longer use the clunky job management script that had issues running on HPCs with odd resource management systems or strict resource requesting requirements. SPANDx is now mixture aware (!), at least when it comes to SNP identification and annotation. Mixed SNPs will still be excluded from phylogenetic analysis, which is intentional, but can be found in the individual gVCFs/VCFs. We've switched to the GATK 4.0+ and now use gVCFs instead of the standard VCF format. Standard VCFs are still produced but will probably be removed in future versions. We've done away with using paup or RAXML for tree construction and just use Fastree for both ML and MP. Trees are now drawn as part of the pipeline rather than having to do an additional step after the pipeline completes. SNP matrices are still produced if you need/want to use paup or RAXML for additional phylogentic inference/bootstrapping etc.
 
 ------------------
 #### SPANDx 3.2
@@ -276,6 +276,21 @@ GeneratePLINK_Roary.sh -i ingroup.txt -o outgroup.txt -r Roary.csv output (if di
 SPANDx is able to annotate all variants in a combined SNP/indel matrix that makes searching for specific mutations easy. If you are running SPANDx with an new bacterial species, and you are unsure if there is a required database for annotation, you can check to see what exists in snpEff and to see if it is already installed on your system. Post SPANDx v4.0, to see what version of snpEff is being used first load the SPANDx environment ```conda activate spandx``` then ```snpEff databases | grep "Genus_species" | more```
 
 snpEff has a massive number of databases, so if you are using a published reference sequence, chances are it will have an existing database. One caveat is that the chromosome name of the reference fasta file must match that of the snpEff database. The name of the bacterial chromosome is normally '>Chromosome' so the start of the fasta file should be named with >Chromosome rather than the default NCBI naming. If these don't match, you'll get an empty output for the annotated variants. Also as of version 4.0, SPANDx (and snpEff) will try to automatically download and install any new databases requested by the user. Although this generally works, the download may fail and the database may need to be installed manually. Most of the hurdles that we've encountered with automatic installation are due to proxy settings on the host system, not letting snpeEff download and install automatically. This limitation has been addressed in v4.0 but keep this in mind if annotations are not working properly.
+
+If the database doesn't exist in snpEff or you'd like to install a database of your own annotated strain, there are extensive instructions in the snpEff manual for different annotations types. I find it easiest if you can download or create a genbank file of the annotated genome and then load taht into snpEff. If you do this just make sure that the genbank file has the sequence information included as well as the annotation. Once you've downloaded (or created) the genbank file, copy it into the snpEff data directory and create a subdirectory with the genome name. Copy the genbank file into this directory and rename it as genes.gbk. Add an entry into the snpEff config file with the name of the genome followed by ".genome : genome_name" e.g. Escherichia_coli_DH5a.genome : Escherichia coli DH5a. Then create a snpfEff database using the same name
+
+```
+snpEff build -genbank Escherichia_coli_DH5a
+```
+To verify:
+```
+snpEff dump Escherichia_coli_DH5a
+```
+And to check the name of the chromosome that should be at the top of your .fasta file
+```
+snpEff dump Escherichia_coli_DH5a | grep Chromosomes -A+2
+```
+
 
 ## Citation
 
