@@ -170,7 +170,7 @@ SPANDx can optionally down-sample your read data to run through the pipeline qui
 
 ```--tri_allelic  ```
 
-Set to true if you would like tri-allelic SNPs/indels used in the phylogenetic analysis 
+Set to true if you would like tri-allelic SNPs/indels used in the phylogenetic analysis - not currently implemented in V4
 (default: false).
 
 ```--indels```
@@ -183,9 +183,14 @@ Set to true if you would like indels used in the phylogenetic analysis
 Optionally perform within species mixtures analysis. Set this parameter to 'true' if you are dealing with multiple strains within the same WGS sample 
 (default: false). Note that this feature is not currently implemented.
 
+```--pairing```
+
+Either single end data or paired end data can be run through SPANDx. If read data is single end then set this parameter to "SE" instead of "PE"
+(default: PE).
+
 ```--structural```   
 
-Set to true if you would like to identify structural variants Note that this step can take a considerable amount of time if you have deep sequencing data 
+Set to true if you would like to identify structural variants. Note that this step can take a considerable amount of time if you have deep sequencing data 
 (default: false).
 
 ```--notrim```       
