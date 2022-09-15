@@ -152,7 +152,51 @@ head -n1 out.vcf.table.all | sed 's/.GT//g' > header.left
 echo -e "Effect\tImpact\tFunctional_Class\tCodon_change\tProtein_and_nucleotide_change\tAmino_Acid_Length\tGene_name\tBiotype" > header.right
 paste header.left header.right > header
 cat header out.vcf.headerless.plus.effects > All_SNPs_indels_annotated.txt
-	
+
+###########################################################################
+# Creates the SNP and INDEL matrix for PAUP (or other phylogenetic programs)
+###########################################################################
+
+if [ ! -s "indel_matrix.nex" ]; then
+    echo -e "\nScript must be supplied with indel_matrix.nex. Please check the directory and analysis and run again\n"
+else
+	echo -e "Found indel matrix\n"
+fi
+
+if [ ! -s "Ortho_SNP_matrix.nex" ]; then
+	echo -e "Script must be supplied with Ortho_SNP_matrix.nex\n"
+	echo -e "Please check the directory and analysis and run again\n"
+else
+	echo -e "Found Ortho_SNP_matrix.nex\n"
+fi
+
+#chomp files into just SNPs and positions
+tail -n +8 Ortho_SNP_matrix.nex | head -n -2 > SNP_matrix_tmp
+awk ' { for (i=3; i<=NF; i++) {if ($i == $2) $i=0; else $i=1}};  {print $0} ' SNP_matrix_tmp > SNP01.tmp
+
+#indels
+tail -n +8 indel_matrix.nex | head -n -2 > indel_matrix_tmp
+awk ' { for (i=3; i<=NF; i++) {if ($i == $2) $i=0; else $i=1}};  {print $0} ' indel_matrix_tmp > indel01.tmp
+
+cut -d " " -f 3- SNP01.tmp > SNP01.tmp2
+awk '{ print $1 }' SNP01.tmp > SNP.loc
+sed -i 's/$/ 0/g' SNP.loc 
+
+cut -d " " -f 3- indel01.tmp > indel01.tmp2
+awk '{ print $1 }' indel01.tmp > indel.loc
+sed -i 's/$/ 0/g' indel.loc
+paste -d ' ' indel.loc indel01.tmp2 > indel.mrg
+paste -d ' ' SNP.loc SNP01.tmp2 > SNP.mrg
+
+#cat files and create header
+cat SNP.mrg indel.mrg > SNPindel.mrg
+x=`cat SNPindel.mrg | wc -l`
+y=`head -n 1 SNPindel.mrg | awk '{print NF}'`
+z=$((y - 1))
+taxa=`tail -n +6 Ortho_SNP_matrix.nex | head -n 1 |cut -d ' ' -f 2-`
+grid=`cat SNPindel.mrg`
+echo -e "\n#nexus\nbegin data;\ndimensions ntax=$z nchar=$x;\nformat symbols=\"01\" gap=. datatype=standard transpose;\ntaxlabels $taxa\nmatrix\n$grid\n;\nend;" > indel_SNP_matrix.nex
+
 echo "SPANDx has finished"
 
 exit 0
