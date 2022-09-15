@@ -40,49 +40,6 @@ cut -f3,6- out.vcf.table.snps.clean > grid.nucleotide
 grid=$(paste snp.location grid.nucleotide)
 echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > Ortho_SNP_matrix.nex
 
-
-###########################################################################
-# Creates the indel matrix for PAUP
-###########################################################################
-
-echo "Creating indel matrix"
-echo "Removing mixed indels"
-awk '$5 ~/INDEL/' out.vcf.table | awk '$4 !~/\.,\*/' | grep -v '\./\.' | grep -v ',\*' > out.vcf.table.indels.clean
-awk ' { for (i=6; i<=NF; i++) {
-        if ($i ~ /\//) { 
-          split($i, a, "/");
-        if (a[1] == a[2]) $i=a[1];
-           }
-         }
-       }; 
-       {print $0} ' out.vcf.table.indels.clean > out.vcf.table.indels.clean.tmp	
-mv out.vcf.table.indels.clean.tmp out.vcf.table.indels.clean   
-awk ' { for (i=6; i<=NF; i++) {
-        if ($i ~ /|/) { 
-          split($i, a, "|");
-        if (a[1] == a[2]) $i=a[1];
-           }
-         }
-       }; 
-       {print $0} ' out.vcf.table.indels.clean > out.vcf.table.indels.clean.tmp		   
-mv out.vcf.table.indels.clean.tmp out.vcf.table.indels.clean   
-
-#remove any remaining mixed alleles
-grep -v '|' out.vcf.table.indels.clean > out.vcf.table.indels.clean.tmp
-mv out.vcf.table.indels.clean.tmp out.vcf.table.indels.clean  
-grep -v '/' out.vcf.table.indels.clean > out.vcf.table.indels.clean.tmp
-mv out.vcf.table.indels.clean.tmp out.vcf.table.indels.clean  
-sed -i 's/ /\t/g' out.vcf.table.indels.clean
-
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
-ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
-nchar=$(cat out.vcf.table.indels.clean | wc -l)
-awk '{print $1,$2}' out.vcf.table.indels.clean | sed 's/ /_/g' > indel.location
-cut -f3,6- out.vcf.table.indels.clean > grid.indel.nucleotide
-grid=$(paste indel.location grid.indel.nucleotide)
-echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > indel_matrix.nex
-
-
 ###########################################################################
 # Creates the SNP matrix for FastTree2
 ###########################################################################
