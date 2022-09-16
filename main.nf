@@ -933,6 +933,8 @@ if (params.phylogeny) {
       file("MP_phylogeny.tre")
       file("ML_phylogeny.tre")
       file("All_SNPs_indels_annotated.txt")
+      file("indel_matrix.nex")
+      file("indel_SNP_matrix.nex")
 
       script:
       """
