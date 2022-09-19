@@ -153,11 +153,6 @@ echo -e "Effect\tImpact\tFunctional_Class\tCodon_change\tProtein_and_nucleotide_
 paste header.left header.right > header
 cat header out.vcf.headerless.plus.effects > All_SNPs_indels_annotated.txt
 
-
-
-
-## This script will take two input files - indel_matrix.nex and Ortho_SNP_matrix.nex - and construct a indel and SNP matrix for input into PAUP
-
 ###########################################################################
 # Creates the SNP and INDEL matrix for PAUP (or other phylogenetic programs)
 ###########################################################################

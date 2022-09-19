@@ -197,6 +197,107 @@ taxa=`tail -n +6 Ortho_SNP_matrix.nex | head -n 1 |cut -d ' ' -f 2-`
 grid=`cat SNPindel.mrg`
 echo -e "\n#nexus\nbegin data;\ndimensions ntax=$z nchar=$x;\nformat symbols=\"01\" gap=. datatype=standard transpose;\ntaxlabels $taxa\nmatrix\n$grid\n;\nend;" > indel_SNP_matrix.nex
 
+###########################################################################
+# Creates the SNP and INDEL matrices with deleted regions included for PAUP (or other phylogenetic programs)
+###########################################################################
+
+echo "Creating SNP matrix with gaps"
+echo "Removing mixed SNPs, "
+awk '$5 ~/SNP/' out.vcf.table | awk '$4 !~/\.,\*/' > out.vcf.table.snps.gaps.clean
+# replace A/A, C/C, G/G, T/T genotypes with single nucleotides A, G, C, T etc etc 
+sed -i 's#A/A\|A|A#A#g' out.vcf.table.snps.gaps.clean
+sed -i 's#G/G\|G|G#G#g' out.vcf.table.snps.gaps.clean
+sed -i 's#C/C\|C|C#C#g' out.vcf.table.snps.gaps.clean
+sed -i 's#T/T\|T|T#T#g' out.vcf.table.snps.gaps.clean
+sed -i 's#\./\.\|\.|\.#\.#g' out.vcf.table.snps.gaps.clean
+grep -v '|' out.vcf.table.snps.gaps.clean | grep -v '/' > vcf.table.tmp #remove mixed genotypes
+mv vcf.table.tmp out.vcf.table.snps.gaps.clean
+taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
+ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
+nchar=$(cat out.vcf.table.snps.gaps.clean | wc -l)
+awk '{print $1,$2}' out.vcf.table.snps.gaps.clean | sed 's/ /_/g' > snp.location
+cut -f3,6- out.vcf.table.snps.gaps.clean > grid.nucleotide
+grid=$(paste snp.location grid.nucleotide)
+echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > Ortho_SNP_matrix_with_gaps.nex
+
+
+echo "Creating indel matrix with gaps"
+echo "Removing mixed indels"
+awk '$5 ~/INDEL/' out.vcf.table | awk '$4 !~/\.,\*/' | grep -v ',\*' > out.vcf.table.indels.gaps.clean
+awk ' { for (i=6; i<=NF; i++) {
+        if ($i ~ /\//) { 
+          split($i, a, "/");
+        if (a[1] == a[2]) $i=a[1];
+           }
+         }
+       }; 
+       {print $0} ' out.vcf.table.indels.gaps.clean > out.vcf.table.indels.gaps.clean.tmp	
+mv out.vcf.table.indels.gaps.clean.tmp out.vcf.table.indels.gaps.clean   
+awk ' { for (i=6; i<=NF; i++) {
+        if ($i ~ /|/) { 
+          split($i, a, "|");
+        if (a[1] == a[2]) $i=a[1];
+           }
+         }
+       }; 
+       {print $0} ' out.vcf.table.indels.gaps.clean > out.vcf.table.indels.gaps.clean.tmp		   
+mv out.vcf.table.indels.gaps.clean.tmp out.vcf.table.indels.gaps.clean   
+
+#remove any remaining mixed alleles
+grep -v '|' out.vcf.table.indels.gaps.clean > out.vcf.table.indels.gaps.clean.tmp
+mv out.vcf.table.indels.gaps.clean.tmp out.vcf.table.indels.gaps.clean  
+grep -v '/' out.vcf.table.indels.gaps.clean > out.vcf.table.indels.gaps.clean.tmp
+mv out.vcf.table.indels.gaps.clean.tmp out.vcf.table.indels.gaps.clean  
+sed -i 's/ /\t/g' out.vcf.table.indels.gaps.clean
+
+taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
+ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
+nchar=$(cat out.vcf.table.indels.gaps.clean | wc -l)
+awk '{print $1,$2}' out.vcf.table.indels.gaps.clean | sed 's/ /_/g' > indel.location
+cut -f3,6- out.vcf.table.indels.gaps.clean > grid.indel.nucleotide
+grid=$(paste indel.location grid.indel.nucleotide)
+echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > indel_matrix_with_gaps.nex
+
+if [ ! -s "indel_matrix_with_gaps.nex" ]; then
+    echo -e "\nScript must be supplied with indel_matrix_with_gaps.nex. Please check the directory and analysis and run again\n"
+else
+	echo -e "Found indel matrix\n"
+fi
+
+if [ ! -s "Ortho_SNP_matrix_with_gaps.nex" ]; then
+	echo -e "Script must be supplied with Ortho_SNP_matrix_with_gaps.nex\n"
+	echo -e "Please check the directory and analysis and run again\n"
+else
+	echo -e "Found Ortho_SNP_matrix_with_gaps.nex\n"
+fi
+
+#chomp files into just SNPs and positions
+tail -n +8 Ortho_SNP_matrix_with_gaps.nex | head -n -2 > SNP_matrix_tmp
+awk ' { for (i=3; i<=NF; i++) {if ($i == $2) $i=0; else if($i == ".") $i="."; else $i=1}};  {print $0} ' SNP_matrix_tmp > SNP01.tmp
+
+#indels
+tail -n +8 indel_matrix_with_gaps.nex | head -n -2 > indel_matrix_tmp
+awk ' { for (i=3; i<=NF; i++) {if ($i == $2) $i=0; else if($i == ".") $i="."; else $i=1}};  {print $0} ' indel_matrix_tmp > indel01.tmp
+
+cut -d " " -f 3- SNP01.tmp > SNP01.tmp2
+awk '{ print $1 }' SNP01.tmp > SNP.loc
+sed -i 's/$/ 0/g' SNP.loc 
+
+cut -d " " -f 3- indel01.tmp > indel01.tmp2
+awk '{ print $1 }' indel01.tmp > indel.loc
+sed -i 's/$/ 0/g' indel.loc
+paste -d ' ' indel.loc indel01.tmp2 > indel.mrg
+paste -d ' ' SNP.loc SNP01.tmp2 > SNP.mrg
+
+#cat files and create header
+cat SNP.mrg indel.mrg > SNPindel.mrg
+x=`cat SNPindel.mrg | wc -l`
+y=`head -n 1 SNPindel.mrg | awk '{print NF}'`
+z=$((y - 1))
+taxa=`tail -n +6 Ortho_SNP_matrix.nex | head -n 1 |cut -d ' ' -f 2-`
+grid=`cat SNPindel.mrg`
+echo -e "\n#nexus\nbegin data;\ndimensions ntax=$z nchar=$x;\nformat symbols=\"01\" gap=. datatype=standard transpose;\ntaxlabels $taxa\nmatrix\n$grid\n;\nend;" > indel_SNP_matrix_with_gaps.nex
+
 echo "SPANDx has finished"
 
 exit 0
