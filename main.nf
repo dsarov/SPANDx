@@ -861,7 +861,7 @@ process Merge_bedcov {
   publishDir "./Outputs/Coverage", mode: 'copy', overwrite: true
 
   input:
-  file("*.bedcov") from bedcov_files.collect()
+  path "*" from bedcov_files.collect()
 
   output:
   file("Bedcov_merge.txt")
@@ -901,7 +901,7 @@ if (params.phylogeny) {
     publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: true
 
     input:
-    file("*.raw.gvcf") from gvcf_files.collect()
+    path "*"  from gvcf_files.collect()
     file reference from reference_file
     file reference_fai from ref_fai_ch1
     file reference_dict from ref_dict_ch1
