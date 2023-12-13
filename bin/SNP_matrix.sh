@@ -5,7 +5,7 @@
 # Additionally, the SNPs and/or indels are annotated with SnpEff
 #
 # Written by D. Sarovich
-# dsarovich@usc.edu.au
+# dereksarovich@gmail.com
 #
 #########################################################################
 
@@ -25,14 +25,14 @@ gatk VariantsToTable -V out.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -O 
 echo "Creating SNP matrix"
 echo "Removing mixed SNPs, "
 awk '$5 ~/SNP/' out.vcf.table | awk '$4 !~/\.,\*/' | grep -v '\./\.' > out.vcf.table.snps.clean
-# replace A/A, C/C, G/G, T/T genotypes with single nucleotides A, G, C, T etc etc 
+#replace A/A, C/C, G/G, T/T genotypes with single nucleotides A, G, C, T etc etc 
 sed -i 's#A/A\|A|A#A#g' out.vcf.table.snps.clean
 sed -i 's#G/G\|G|G#G#g' out.vcf.table.snps.clean
 sed -i 's#C/C\|C|C#C#g' out.vcf.table.snps.clean
 sed -i 's#T/T\|T|T#T#g' out.vcf.table.snps.clean
 grep -v '|' out.vcf.table.snps.clean | grep -v '/' > vcf.table.tmp #remove mixed genotypes
 mv vcf.table.tmp out.vcf.table.snps.clean
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/\.GT//g')
+taxa=$(head -n1 out.vcf.table | cut -f3,6- |  awk '{ gsub(/\.GT/, ""); print }')
 ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
 nchar=$(cat out.vcf.table.snps.clean | wc -l)
 awk '{print $1,$2}' out.vcf.table.snps.clean | sed 's/ /_/g' > snp.location
@@ -74,7 +74,7 @@ grep -v '/' out.vcf.table.indels.clean > out.vcf.table.indels.clean.tmp
 mv out.vcf.table.indels.clean.tmp out.vcf.table.indels.clean  
 sed -i 's/ /\t/g' out.vcf.table.indels.clean
 
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/\.GT//g')
+taxa=$(head -n1 out.vcf.table | cut -f3,6- |  awk '{ gsub(/\.GT/, ""); print }')
 ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
 nchar=$(cat out.vcf.table.indels.clean | wc -l)
 awk '{print $1,$2}' out.vcf.table.indels.clean | sed 's/ /_/g' > indel.location
@@ -88,7 +88,7 @@ echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat sym
 ###########################################################################
 
 awk 'BEGIN {FS=" "; OFS=""}{for (i=1;i<=NF;i++){arr[NR,i]=$i; if(big <= NF) big=NF;}}END {for(i=1;i<=big;i++){for(j=1;j<=NR;j++){printf("%s%s",arr[j,i],(j==NR?"":OFS));} print "";}}' grid.nucleotide > grid.nucleotide.fasttree
-head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g' > taxa.tmp
+head -n1 out.vcf.table | cut -f3,6- | awk '{ gsub(/\.GT/, ""); print }' > taxa.tmp
 awk 'BEGIN {FS=" "; OFS=""}{for (i=1;i<=NF;i++){arr[NR,i]=$i; if(big <= NF) big=NF;}}END {for(i=1;i<=big;i++){for(j=1;j<=NR;j++){printf("%s%s",arr[j,i],(j==NR?"":OFS));} print "";}}' taxa.tmp > taxa.fasttree
 sed -i 's/^/>/' taxa.fasttree
 paste -d '\n' taxa.fasttree grid.nucleotide.fasttree >Ortho_SNP_matrix_FastTree2.nex
@@ -148,7 +148,7 @@ rm effects
 tail -n+2 out.vcf.table.all > out.vcf.table.all.headerless
 sed -i 's/ /\t/g' out.vcf.table.all.headerless
 paste out.vcf.table.all.headerless effects.mrg > out.vcf.headerless.plus.effects
-head -n1 out.vcf.table.all | sed 's/.GT//g' > header.left
+head -n1 out.vcf.table.all |  awk '{ gsub(/\.GT/, ""); print }' > header.left
 echo -e "Effect\tImpact\tFunctional_Class\tCodon_change\tProtein_and_nucleotide_change\tAmino_Acid_Length\tGene_name\tBiotype" > header.right
 paste header.left header.right > header
 cat header out.vcf.headerless.plus.effects > All_SNPs_indels_annotated.txt
@@ -212,7 +212,7 @@ sed -i 's#T/T\|T|T#T#g' out.vcf.table.snps.gaps.clean
 sed -i 's#\./\.\|\.|\.#\.#g' out.vcf.table.snps.gaps.clean
 grep -v '|' out.vcf.table.snps.gaps.clean | grep -v '/' > vcf.table.tmp #remove mixed genotypes
 mv vcf.table.tmp out.vcf.table.snps.gaps.clean
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
+taxa=$(head -n1 out.vcf.table | cut -f3,6- |  awk '{ gsub(/\.GT/, ""); print }')
 ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
 nchar=$(cat out.vcf.table.snps.gaps.clean | wc -l)
 awk '{print $1,$2}' out.vcf.table.snps.gaps.clean | sed 's/ /_/g' > snp.location
@@ -250,7 +250,7 @@ grep -v '/' out.vcf.table.indels.gaps.clean > out.vcf.table.indels.gaps.clean.tm
 mv out.vcf.table.indels.gaps.clean.tmp out.vcf.table.indels.gaps.clean  
 sed -i 's/ /\t/g' out.vcf.table.indels.gaps.clean
 
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
+taxa=$(head -n1 out.vcf.table | cut -f3,6- |  awk '{ gsub(/\.GT/, ""); print }')
 ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
 nchar=$(cat out.vcf.table.indels.gaps.clean | wc -l)
 awk '{print $1,$2}' out.vcf.table.indels.gaps.clean | sed 's/ /_/g' > indel.location

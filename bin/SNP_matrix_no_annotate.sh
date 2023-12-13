@@ -31,7 +31,7 @@ sed -i 's#C/C\|C|C#C#g' out.vcf.table.snps.clean
 sed -i 's#T/T\|T|T#T#g' out.vcf.table.snps.clean
 grep -v '|' out.vcf.table.snps.clean | grep -v '/' > vcf.table.tmp #remove mixed genotypes
 mv vcf.table.tmp out.vcf.table.snps.clean
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
+taxa=$(head -n1 out.vcf.table | cut -f3,6- | awk '{ gsub(/\.GT/, ""); print }')
 ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
 nchar=$(cat out.vcf.table.snps.clean | wc -l)
 awk '{print $1,$2}' out.vcf.table.snps.clean | sed 's/ /_/g' > snp.location
@@ -44,7 +44,7 @@ echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat sym
 ###########################################################################
 
 awk 'BEGIN {FS=" "; OFS=""}{for (i=1;i<=NF;i++){arr[NR,i]=$i; if(big <= NF) big=NF;}}END {for(i=1;i<=big;i++){for(j=1;j<=NR;j++){printf("%s%s",arr[j,i],(j==NR?"":OFS));} print "";}}' grid.nucleotide > grid.nucleotide.fasttree
-head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g' > taxa.tmp
+head -n1 out.vcf.table | cut -f3,6- | awk '{ gsub(/\.GT/, ""); print }' > taxa.tmp
 awk 'BEGIN {FS=" "; OFS=""}{for (i=1;i<=NF;i++){arr[NR,i]=$i; if(big <= NF) big=NF;}}END {for(i=1;i<=big;i++){for(j=1;j<=NR;j++){printf("%s%s",arr[j,i],(j==NR?"":OFS));} print "";}}' taxa.tmp > taxa.fasttree
 sed -i 's/^/>/' taxa.fasttree
 paste -d '\n' taxa.fasttree grid.nucleotide.fasttree >Ortho_SNP_matrix_FastTree2.nex
