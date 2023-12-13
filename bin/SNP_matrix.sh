@@ -32,7 +32,7 @@ sed -i 's#C/C\|C|C#C#g' out.vcf.table.snps.clean
 sed -i 's#T/T\|T|T#T#g' out.vcf.table.snps.clean
 grep -v '|' out.vcf.table.snps.clean | grep -v '/' > vcf.table.tmp #remove mixed genotypes
 mv vcf.table.tmp out.vcf.table.snps.clean
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
+taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/\.GT//g')
 ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
 nchar=$(cat out.vcf.table.snps.clean | wc -l)
 awk '{print $1,$2}' out.vcf.table.snps.clean | sed 's/ /_/g' > snp.location
@@ -74,7 +74,7 @@ grep -v '/' out.vcf.table.indels.clean > out.vcf.table.indels.clean.tmp
 mv out.vcf.table.indels.clean.tmp out.vcf.table.indels.clean  
 sed -i 's/ /\t/g' out.vcf.table.indels.clean
 
-taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/.GT//g')
+taxa=$(head -n1 out.vcf.table | cut -f3,6- | sed 's/\.GT//g')
 ntaxa=$(awk '{print NF-4; exit }' out.vcf.table)
 nchar=$(cat out.vcf.table.indels.clean | wc -l)
 awk '{print $1,$2}' out.vcf.table.indels.clean | sed 's/ /_/g' > indel.location
