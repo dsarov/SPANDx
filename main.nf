@@ -935,10 +935,12 @@ if (params.phylogeny) {
       file("All_SNPs_indels_annotated.txt")
       file("indel_matrix.nex")
       file("indel_SNP_matrix.nex")
+      file("QC_metrics_summary.tsv")
 
       script:
       """
       bash SNP_matrix.sh ${snpeff_database} ${baseDir}
+      bash summary.sh
       """
     }
  } else {
