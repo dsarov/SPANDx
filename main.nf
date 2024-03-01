@@ -687,7 +687,6 @@ if (params.mixtures) {
     }
   }
 
-
 } else {
 
     //Not a mixture
@@ -804,8 +803,6 @@ if (params.mixtures) {
   if (params.annotation) {
     process AnnotateSNPs {
 
-      // Need to split and optimize with threads
-
       label "spandx_snpeff"
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
@@ -816,8 +813,6 @@ if (params.mixtures) {
       output:
       set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
 
-
-      //Look for the annotation in the default location
       """
       snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
@@ -826,8 +821,6 @@ if (params.mixtures) {
 
 
   process AnnotateIndels {
-    // TO DO
-    // Need to split and optimize with threads
 
     label "spandx_snpeff"
     tag { "$id" }
@@ -940,7 +933,7 @@ if (params.phylogeny) {
       script:
       """
       bash SNP_matrix.sh ${snpeff_database} ${baseDir}
-      bash summary.sh
+      bash Summary.sh ${ref} ${baseDir}
       """
     }
  } else {
