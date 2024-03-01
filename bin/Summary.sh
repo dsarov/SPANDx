@@ -5,8 +5,6 @@
 ref=$1
 baseDir=$2
 
-SAMTOOLS=$3
-
 ##input sample names
 
 #cd $PBS_O_WORKDIR
@@ -28,11 +26,9 @@ _EOF_
 
 for (( i=0; i<n; i++ )); do
   
-  SNP_PASS_count=$(cat $baseDir/Outputs/Variants/VCFs/${sequences[$i]}.snps.PASS.vcf | grep -v '#' | wc -l)
-  #SNP_FAIL_count=$(cat $baseDir/Outputs/SNPs_indels_FAIL/${sequences[$i]}.snps.FAIL.vcf | grep -v '#' | wc -l)
-  indel_PASS_count=$(cat $baseDir/Outputs/SNPs_indels_PASS/${sequences[$i]}.indels.PASS.vcf | grep -v '#' | wc -l)
-  #indel_FAIL_count=$(cat $baseDir/Outputs/SNPs_indels_FAIL/${sequences[$i]}.indels.FAIL.vcf | grep -v '#' | wc -l)
-  Avg_cov=$(cat ${sequences[$i]}/unique/${sequences[$i]}.sample_summary | awk '{print $3}' | head -n2 | tail -n1)
+  variant_PASS_count=$(cat $baseDir/Outputs/Variants/VCFs/${sequences[$i]}.PASS.indels.snps.mixed.vcf | grep -v '#' | wc -l)
+  variant_FAIL_count=$(cat $baseDir/Outputs/SNPs_indels_FAIL/${sequences[$i]}.FAIL.snps.indels.mixed.vcf | grep -v '#' | wc -l)
+  #Avg_cov=$(cat ${sequences[$i]}/unique/${sequences[$i]}.sample_summary | awk '{print $3}' | head -n2 | tail -n1)
   Mapped_reads=$(samtools idxstats $baseDir/Outputs/bams/${sequences[$i]}.dedup.bam |  awk '{ total += $3 } END {print total }')
   
   echo -e "${sequences[$i]}\t$SNP_PASS_count\t$SNP_FAIL_count\t$indel_PASS_count\t$indel_FAIL_count\t$Avg_cov\t$Mapped_reads" > ${sequences[$i]}.summary
