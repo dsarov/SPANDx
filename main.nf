@@ -617,7 +617,7 @@ if (params.mixtures) {
     set id, file(variants), file(variants_index) from mixtureFilter
 
     output:
-    set id, file("${id}.PASS.snps.indels.mixed.vcf") into filteredMixture
+    set id, file("${id}.PASS.snps.indels.mixed.vcf"), file("${id}.FAIL.snps.indels.mixed.vcf") into filteredMixture
 
     """
     gatk VariantFiltration -R ${reference} -O ${id}.snps.indels.filtered.mixed.vcf -V $variants \
@@ -627,7 +627,8 @@ if (params.mixtures) {
 
     header=`grep -n "#CHROM" ${id}.snps.indels.filtered.mixed.vcf | cut -d':' -f 1`
 		head -n "\$header" ${id}.snps.indels.filtered.mixed.vcf > snp_head
-		cat ${id}.snps.indels.filtered.mixed.vcf | grep PASS | cat snp_head - > ${id}.PASS.snps.indels.mixed.vcf
+		cat ${id}.snps.indels.filtered.mixed.vcf | awk -F'\t' '$7 == "PASS" {print}' | cat snp_head - > ${id}.PASS.snps.indels.mixed.vcf
+    cat ${id}.snps.indels.filtered.mixed.vcf | awk -F'\t' '$7 != "PASS" {print}' | cat snp_head - > ${id}.FAIL.snps.indels.mixed.vcf
     """
   }
 
