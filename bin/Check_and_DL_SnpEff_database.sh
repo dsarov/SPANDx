@@ -4,7 +4,7 @@
 # The following script will check to see if the SnpEff database exists and if not it will attempt to download and install
 #
 # Written by D. Sarovich
-# dsarovich@usc.edu.au
+# dereksarovich@gmail.com
 #
 #########################################################################
 
