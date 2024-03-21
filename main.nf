@@ -949,6 +949,8 @@ if (params.phylogeny) {
       file("indel_matrix.nex")
       file("indel_SNP_matrix.nex")
       file("QC_metrics_summary.tsv")
+      file("indel_differences_matrix.tsv")
+      file("snp_differences_matrix.tsv")
 
 
       script:
