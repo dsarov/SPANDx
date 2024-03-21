@@ -24,7 +24,7 @@ gatk VariantsToTable -V out.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -O 
 
 echo "Creating SNP matrix"
 echo "Removing mixed SNPs, "
-awk '$5 ~/SNP/' out.vcf.table | awk '$4 !~/\.,\*/' | grep -v '\./\.' > out.vcf.table.snps.clean
+awk '$5 ~/SNP/' out.vcf.table | awk '$4 !~/[.,].*/' | grep -v '\./\.' > out.vcf.table.snps.clean 
 #replace A/A, C/C, G/G, T/T genotypes with single nucleotides A, G, C, T etc etc 
 sed -i 's#A/A\|A|A#A#g' out.vcf.table.snps.clean
 sed -i 's#G/G\|G|G#G#g' out.vcf.table.snps.clean
@@ -94,6 +94,106 @@ sed -i 's/^/>/' taxa.fasttree
 paste -d '\n' taxa.fasttree grid.nucleotide.fasttree >Ortho_SNP_matrix_FastTree2.nex
 fasttree -log ML_log.txt -nt Ortho_SNP_matrix_FastTree2.nex > ML_phylogeny.tre
 fasttree -log MP_log.txt -noml -nt Ortho_SNP_matrix_FastTree2.nex > MP_phylogeny.tre
+
+
+
+###########################################################################
+# Creates the all vs all matrices
+###########################################################################
+
+#echo "Splitting SNPs and indels"
+awk '$5 ~/SNP/' out.vcf.table > out.vcf.table.snps.a_vs_a
+awk '$5 ~/INDEL/' out.vcf.table > out.vcf.table.indels.a_vs_a
+head -n1 out.vcf.table | sed 's/\.GT\t/\t/g; s/\.GT$//' > header
+cat header out.vcf.table.snps.a_vs_a > out.vcf.a_vs_a.snps
+cat header out.vcf.table.indels.a_vs_a > out.vcf.a_vs_a.indels
+
+
+#cleaning SNP table - technically don't really need to worry about simplifying A/A and A|A as the below scripts would work rgardless but makes the data easier to look at
+
+sed -i 's#A/A\|A|A#A#g' out.vcf.a_vs_a.snps
+sed -i 's#G/G\|G|G#G#g' out.vcf.a_vs_a.snps
+sed -i 's#C/C\|C|C#C#g' out.vcf.a_vs_a.snps
+sed -i 's#T/T\|T|T#T#g' out.vcf.a_vs_a.snps
+sed -i 's#|#/#g' out.vcf.a_vs_a.snps
+
+#clean indel table
+sed -i 's#|#/#g' out.vcf.a_vs_a.indels
+
+# The input file
+# Input and output files
+input="out.vcf.a_vs_a.snps"
+output="snp_differences_matrix.tsv"
+
+# Read the sample names from the first row, skipping the initial columns that do not contain sample data
+read -r -a sample_names <<< "$(awk 'NR==1 {for(i=6; i<=NF; i++) printf "%s\t", $i; print ""}' $input | sed 's/\t$//')"
+
+# Number of samples
+num_samples=${#sample_names[@]}
+
+# Initialize output file and write the header
+printf "%s\t%s\n" "" "${sample_names[*]}" | tr ' ' '\t' > $output
+
+# Iterate through each pair of samples to calculate differences
+for (( i=0; i<num_samples; i++ )); do
+    # Prepare the line to be written to the output file
+    line="${sample_names[i]}"
+    for (( j=0; j<num_samples; j++ )); do
+        if [[ $i -eq $j ]]; then
+            # No difference if comparing the same sample
+            line="$line\t-"
+	    elif [[ $j -lt $i ]]; then
+            # Skip counting and leave blank for lower half to avoid redundancy
+            line="$line\t"
+        else
+            # Calculate SNP differences for sample pairs, excluding '*/*' and './.'
+            count=$(awk -v col1=$((i+6)) -v col2=$((j+6)) \
+                'NR>1 && $col1!=$col2 && $col1!="*/*" && $col1!="./." && $col2!="*/*" && $col2!="./." {diff++} END {print diff+0}' $input)
+            line="$line\t$count"
+        fi
+    done
+    # Write the line to the output file
+    echo -e "$line" >> $output
+done
+
+# Input and output files
+input="out.vcf.a_vs_a.indels"
+output="indel_differences_matrix.tsv"
+
+# Read the sample names from the first row, skipping the initial columns that do not contain sample data
+read -r -a sample_names <<< "$(awk 'NR==1 {for(i=6; i<=NF; i++) printf "%s\t", $i; print ""}' $input | sed 's/\t$//')"
+
+# Number of samples
+num_samples=${#sample_names[@]}
+
+# Initialize output file and write the header
+printf "%s\t%s\n" "" "${sample_names[*]}" | tr ' ' '\t' > $output
+
+# Iterate through each pair of samples to calculate differences
+for (( i=0; i<num_samples; i++ )); do
+    # Prepare the line to be written to the output file
+    line="${sample_names[i]}"
+    for (( j=0; j<num_samples; j++ )); do
+        if [[ $i -eq $j ]]; then
+            # No difference if comparing the same sample
+            line="$line\t-"
+	    elif [[ $j -lt $i ]]; then
+            # Skip counting and leave blank for lower half to avoid redundancy
+            line="$line\t"
+        else
+            # Calculate SNP differences for sample pairs, excluding '*/*' and './.'
+            count=$(awk -v col1=$((i+6)) -v col2=$((j+6)) \
+                'NR>1 && $col1!=$col2 && $col1!="*/*" && $col1!="./." && $col2!="*/*" && $col2!="./." {diff++} END {print diff+0}' $input)
+            line="$line\t$count"
+        fi
+    done
+    # Write the line to the output file
+    echo -e "$line" >> $output
+done
+
+
+
+
 
 ###############################################
 ##
