@@ -951,7 +951,7 @@ if (params.phylogeny) {
       file("QC_metrics_summary.tsv")
       file("indel_differences_matrix.tsv")
       file("snp_differences_matrix.tsv")
-
+      file("merged_snp_indel_matrix.tsv")
 
       script:
 

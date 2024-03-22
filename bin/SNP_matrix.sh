@@ -123,7 +123,7 @@ sed -i 's#|#/#g' out.vcf.a_vs_a.indels
 # The input file
 # Input and output files
 input="out.vcf.a_vs_a.snps"
-output="snp_differences_matrix.tsv"
+output_snp="snp_differences_matrix.tsv"
 
 # Read the sample names from the first row, skipping the initial columns that do not contain sample data
 read -r -a sample_names <<< "$(awk 'NR==1 {for(i=6; i<=NF; i++) printf "%s\t", $i; print ""}' $input | sed 's/\t$//')"
@@ -132,7 +132,7 @@ read -r -a sample_names <<< "$(awk 'NR==1 {for(i=6; i<=NF; i++) printf "%s\t", $
 num_samples=${#sample_names[@]}
 
 # Initialize output file and write the header
-printf "%s\t%s\n" "" "${sample_names[*]}" | tr ' ' '\t' > $output
+printf "%s\t%s\n" "" "${sample_names[*]}" | tr ' ' '\t' > "$output_snp"
 
 # Iterate through each pair of samples to calculate differences
 for (( i=0; i<num_samples; i++ )); do
@@ -153,12 +153,12 @@ for (( i=0; i<num_samples; i++ )); do
         fi
     done
     # Write the line to the output file
-    echo -e "$line" >> $output
+    echo -e "$line" >> "$output_snp"
 done
 
 # Input and output files
 input="out.vcf.a_vs_a.indels"
-output="indel_differences_matrix.tsv"
+output_indel="indel_differences_matrix.tsv"
 
 # Read the sample names from the first row, skipping the initial columns that do not contain sample data
 read -r -a sample_names <<< "$(awk 'NR==1 {for(i=6; i<=NF; i++) printf "%s\t", $i; print ""}' $input | sed 's/\t$//')"
@@ -167,7 +167,7 @@ read -r -a sample_names <<< "$(awk 'NR==1 {for(i=6; i<=NF; i++) printf "%s\t", $
 num_samples=${#sample_names[@]}
 
 # Initialize output file and write the header
-printf "%s\t%s\n" "" "${sample_names[*]}" | tr ' ' '\t' > $output
+printf "%s\t%s\n" "" "${sample_names[*]}" | tr ' ' '\t' > "$output_indel"
 
 # Iterate through each pair of samples to calculate differences
 for (( i=0; i<num_samples; i++ )); do
@@ -188,11 +188,36 @@ for (( i=0; i<num_samples; i++ )); do
         fi
     done
     # Write the line to the output file
-    echo -e "$line" >> $output
+    echo -e "$line" >> "$output_indel"
 done
 
 
-
+awk '
+    BEGIN { FS=OFS="\t" }
+    FNR == 1 && NR == FNR {
+        print; # print header from the first file only
+        next;
+    }
+    FNR > 1 {
+        if (NR == FNR) { # storing values from the first matrix
+            for (i=2; i<=NF; i++) matrix[FNR,i] = $i;
+        } else { # processing and adding values for the second matrix
+            printf $1; # print the sample name
+            for (i=2; i<=FNR; i++) {
+                if (i == FNR) {
+                    printf OFS "-"; # print "-" for diagonal
+                } else if (i < FNR) {
+                    printf OFS ""; # keep lower triangle empty
+                } else {
+                    # Add and print for upper triangle
+                    sum = matrix[FNR,i] == "-" ? $i : ($i == "-" ? matrix[FNR,i] : matrix[FNR,i] + $i);
+                    printf OFS sum;
+                }
+            }
+            printf "\n";
+        }
+    }
+' "$output_indel" "$output_snp" > merged_snp_indel_matrix.tsv
 
 
 ###############################################
