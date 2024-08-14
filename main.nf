@@ -555,7 +555,7 @@ process Deduplicate {
     if (params.unaligned) {
     """
     gatk --java-options -Xmx${task.memory.toString().replaceAll(/[\sB]/,'')} MarkDuplicates -I "${id}.bam" -O ${id}.dedup.bam --REMOVE_DUPLICATES true \
-    --METRICS_FILE ${id}.dedup.txt --VALIDATION_STRINGENCY LENIENT
+    --METRICS_FILE ${id}.dedup.txt --VALIDATION_STRINGENCY LENIENT --ASSUME_SORT_ORDER coordinate
     samtools index ${id}.dedup.bam
     samtools view -b -F 2 ${id}.dedup.bam | samtools sort -n - -o ${id}.unmapped.bam
     bamToFastq -i ${id}.unmapped.bam -fq ${id}_unmapped_1_sequence.fastq -fq2 ${id}_unmapped_2_sequence.fastq
