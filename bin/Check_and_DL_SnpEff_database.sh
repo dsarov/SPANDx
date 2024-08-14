@@ -53,7 +53,7 @@ else
 fi
 
 chr_name=$(snpEff dump "${database}" | grep -A1 'Chromosomes names' | tail -n1 | awk '{print $2}'|sed "s/'//g")
-ref_chr_name=$(head -n1 "$ref".fasta | sed 's/>//')
+ref_chr_name=$(head -n1 "$ref" | sed 's/>//')
 if [ "$chr_name" == "$ref_chr_name" ]; then
 	echo -e "Chromosome names in the SnpEff database match the reference chromosome names, good\n"
 else
