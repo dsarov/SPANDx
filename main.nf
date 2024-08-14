@@ -373,10 +373,12 @@ process ReferenceAlignment_assembly {
 
   input:
   file ref_index from ref_index_ch
+  file refcov from refcov_ch
   set id, file(forward), file(reverse) from alignment.mix(alignment_assembly)
 
   output:
   set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+  set id, file("${id}.depth.txt") into depth_bam
 
   """
   bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
@@ -385,6 +387,10 @@ process ReferenceAlignment_assembly {
   samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
   samtools index ${id}.bam
   rm ${id}.sam ${id}.bam_tmp
+  mosdepth --by ${refcov} ${id}.output ${id}.bam
+  sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+  total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+  echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
   """
 
 }
@@ -396,10 +402,12 @@ process ReferenceAlignment_assembly {
 
     input:
     file ref_index from ref_index_ch
+    file refcov from refcov_ch
     set id, file(forward), file(reverse) from alignment // Reads
 
     output:
     set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+    set id, file("${id}.depth.txt") into depth_bam
 
     """
     bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
@@ -408,9 +416,12 @@ process ReferenceAlignment_assembly {
     samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
     samtools index ${id}.bam
     rm ${id}.sam ${id}.bam_tmp
+    mosdepth --by ${refcov} ${id}.output ${id}.bam
+    sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+    total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+    echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
     """
   }
-
 }
 } else {  /*
   =======================================================================
@@ -443,8 +454,7 @@ process ReferenceAlignment_assembly {
           """
         } else {
           """
-          trimmomatic SE -threads 1 ${forward} \
-          ${id}_1.fq.gz ${id}_1_u.fq.gz \
+          trimmomatic SE -threads 1 ${forward} ${id}_1.fq.gz \
           ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
           LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
           """
@@ -491,10 +501,12 @@ process ReferenceAlignment_assembly {
 
       input:
       file ref_index from ref_index_ch
-      set id, file(forward) from alignment // Reads
+      set id, file(forward) from alignment
+      file refcov from refcov_ch
 
       output:
       set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+      set id, file("${id}.depth.txt") into depth_bam
 
       """
       bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
@@ -502,7 +514,11 @@ process ReferenceAlignment_assembly {
       samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
       samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
       samtools index ${id}.bam
-      rm ${id}.sam
+      rm ${id}.sam ${id}.bam_tmp
+      mosdepth --by ${refcov} ${id}.output ${id}.bam
+      sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+      total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+      echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
       """
     }
 
@@ -617,7 +633,7 @@ if (params.mixtures) {
     set id, file(variants), file(variants_index) from mixtureFilter
 
     output:
-    set id, file("${id}.PASS.snps.indels.mixed.vcf") into filteredMixture
+    set id, file("${id}.PASS.snps.indels.mixed.vcf"), file("${id}.FAIL.snps.indels.mixed.vcf") into filteredMixture
 
     """
     gatk VariantFiltration -R ${reference} -O ${id}.snps.indels.filtered.mixed.vcf -V $variants \
@@ -627,7 +643,8 @@ if (params.mixtures) {
 
     header=`grep -n "#CHROM" ${id}.snps.indels.filtered.mixed.vcf | cut -d':' -f 1`
 		head -n "\$header" ${id}.snps.indels.filtered.mixed.vcf > snp_head
-		cat ${id}.snps.indels.filtered.mixed.vcf | grep PASS | cat snp_head - > ${id}.PASS.snps.indels.mixed.vcf
+		cat ${id}.snps.indels.filtered.mixed.vcf | awk -F'\t' '\$7 == "PASS" {print}' | cat snp_head - > ${id}.PASS.snps.indels.mixed.vcf
+    cat ${id}.snps.indels.filtered.mixed.vcf | awk -F'\t' '\$7 != "PASS" {print}' | cat snp_head - > ${id}.FAIL.snps.indels.mixed.vcf
     """
   }
 
@@ -639,7 +656,7 @@ if (params.mixtures) {
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
       input:
-      set id, file("${id}.PASS.snps.indels.mixed.vcf") from filteredMixture
+      set id, file("${id}.PASS.snps.indels.mixed.vcf"), file("${id}.FAIL.snps.indels.mixed.vcf") from filteredMixture
 
       output:
       set id, file("${id}.ALL.annotated.mixture.vcf") into mixtureArdapProcessing
@@ -651,6 +668,8 @@ if (params.mixtures) {
       }
   }
 
+
+// TO DO - needs to be updated with Delly
   if (params.structural) {
     process PindelProcessing {
 
@@ -686,7 +705,6 @@ if (params.mixtures) {
       """
     }
   }
-
 
 } else {
 
@@ -804,8 +822,6 @@ if (params.mixtures) {
   if (params.annotation) {
     process AnnotateSNPs {
 
-      // Need to split and optimize with threads
-
       label "spandx_snpeff"
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
@@ -816,8 +832,6 @@ if (params.mixtures) {
       output:
       set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
 
-
-      //Look for the annotation in the default location
       """
       snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
@@ -826,8 +840,6 @@ if (params.mixtures) {
 
 
   process AnnotateIndels {
-    // TO DO
-    // Need to split and optimize with threads
 
     label "spandx_snpeff"
     tag { "$id" }
@@ -927,6 +939,7 @@ if (params.phylogeny) {
 
       input:
       set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
+      file depthFiles from depth_bam.collect()
 
       output:
       file("Ortho_SNP_matrix.nex")
@@ -935,11 +948,30 @@ if (params.phylogeny) {
       file("All_SNPs_indels_annotated.txt")
       file("indel_matrix.nex")
       file("indel_SNP_matrix.nex")
+      file("QC_metrics_summary.tsv")
+      file("indel_differences_matrix.tsv")
+      file("snp_differences_matrix.tsv")
+      file("merged_snp_indel_matrix.tsv")
 
       script:
+
+      def cmd = ""
+      if (params.mixtures) {
+          cmd = """
+          bash SNP_matrix.sh ${snpeff_database} ${baseDir}
+          bash Summary.sh ${ref} ${baseDir}
+          """
+      } else {
+          cmd = """
+          bash SNP_matrix.sh ${snpeff_database} ${baseDir}
+          bash Summary_no_mixtures.sh ${ref} ${baseDir}
+          """
+      }
+
       """
-      bash SNP_matrix.sh ${snpeff_database} ${baseDir}
+      $cmd
       """
+
     }
  } else {
    process snp_matrix_no_annotate {

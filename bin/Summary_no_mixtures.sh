@@ -3,14 +3,14 @@
 
 
 ref=$1
-#baseDir=$2
+baseDir=$2
 
 ##input sample names
 
 #cd $PBS_O_WORKDIR
 
-sequences_tmp=(`find ../../../Outputs/Variants/VCFs/*.PASS.snps.indels.mixed.vcf -printf "%f "`)
-sequences=("${sequences_tmp[@]/.PASS.snps.indels.mixed.vcf/}")
+sequences_tmp=(`find ../../../Outputs/Variants/VCFs/*.PASS.snps.vcf -printf "%f "`)
+sequences=("${sequences_tmp[@]/.PASS.snps.vcf/}")
 n=${#sequences[@]}
 
 TAB="$(printf '\t')"
@@ -19,7 +19,7 @@ cat << _EOF_ > SNP_summary_header
 
 Reference=$ref
 Total number of genomes analysed=$n
-Genome Name${TAB}Number of variants passing filters${TAB}Number of variants failing filters${TAB}Number of mixed variants${TAB}Average coverage${TAB}Mapped reads
+Genome Name${TAB}Number of SNPs passing filters${TAB}Number of SNPs failing filters${TAB}Number of indels passing filters${TAB}Number of indels failing filters${TAB}Number of mixed variants${TAB}Average coverage${TAB}Mapped reads
 _EOF_
 
 
@@ -47,16 +47,18 @@ done
 
 for (( i=0; i<n; i++ )); do
   
-  variant_PASS_count=$(cat ../../../Outputs/Variants/VCFs/${sequences[$i]}.PASS.snps.indels.mixed.vcf | grep -v '#' | wc -l)
-  variant_FAIL_count=$(cat ../../../Outputs/Variants/VCFs/${sequences[$i]}.FAIL.snps.indels.mixed.vcf | grep -v '#' | wc -l)
+  snp_PASS_count=$(cat ../../../Outputs/Variants/VCFs/${sequences[$i]}.PASS.snps.vcf | grep -v '#' | wc -l)
+  snp_FAIL_count=$(cat ../../../Outputs/Variants/VCFs/${sequences[$i]}.FAIL.snps.vcf | grep -v '#' | wc -l)
+  indel_PASS_count=$(cat ../../../Outputs/Variants/VCFs/${sequences[$i]}.PASS.indels.vcf | grep -v '#' | wc -l)
+  indel_FAIL_count=$(cat ../../../Outputs/Variants/VCFs/${sequences[$i]}.FAIL.indels.vcf | grep -v '#' | wc -l)
   Mapped_reads=$(samtools idxstats ../../../Outputs/bams/${sequences[$i]}.dedup.bam |  awk '{ total += $3 } END {print total }')
   Avg_cov=$(cat "${sequences[$i]}".depth.txt)
   Mix_count=$(grep -w "${sequences[$i]}" mixture_sum.txt | awk '{print $2}')
   #Mixed_variants=$(All_SNPs_indels_annotated.txt
   
   
-  echo -e "${sequences[$i]}\t$variant_PASS_count\t$variant_FAIL_count\t$Mix_count\t$Avg_cov\t$Mapped_reads" > ${sequences[$i]}.summary
-  #echo -e "${sequences[$i]}\t$variant_PASS_count\t$variant_FAIL_count\t$Avg_cov\t$Mapped_reads" > ${sequences[$i]}.summary
+  echo -e "${sequences[$i]}\t$snp_PASS_count\t$snp_FAIL_count\t$indel_PASS_count\t$indel_FAIL_count\t$Mix_count\t$Avg_cov\t$Mapped_reads" > ${sequences[$i]}.summary
+ 
   
 done
   
