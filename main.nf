@@ -3,7 +3,7 @@
 /*
  *
  *  Pipeline            NF-SPANDx
- *  Version             v4.0.3
+ *  Version             v4.0.4
  *  Description         A comparative genomics pipeline
  *  Authors             Derek Sarovich, Erin Price
  *
@@ -200,6 +200,10 @@ if(params.annotation) {
     process check_and_dl_database {
 
     label "snpeff_dl_db"
+
+    input:
+    file reference from reference_file
+
     conda = ""
     executor 'local'
 
