@@ -47,34 +47,6 @@ git clone https://github.com/dsarov/SPANDx.git ./spandx
 ```
 conda env create --name spandx -f ./spandx/env.yaml
 ```
-**Conda**
-
-Short version for those that just want to get started and understand how environments in conda work.
-Note that a recent change in the conda-forge channel means this method will likely fail until I can fix the issues.
-SPANDx is available on our development channel and its dependencies can be installed with:
-```
-conda install -c dsarov -c bioconda spandx
-```
-
-Update to the latest version from github
-```
-nextflow pull dsarov/spandx
-```
-
-The pipeline itself is run with Nextflow from a local cache of the repository:
-```
-nextflow run dsarov/spandx
-```
-The local cache can be updated with
-```
-nextflow pull dsarov/spandx
-```
-If you want to make changes to the default nextflow.config file clone the workflow into a local directory and change parameters in nextflow.config:
-```
-nextflow clone dsarov/spandx install_dir/
-```
-Or navigate to the conda install path of SPANDx and change the nextflow.config in that location.
-
 Long version for those unfamiliar with environments or just want all the steps for recommended installation
 Make sure you have the conda package manager installed (e.g. Anaconda, miniconda). You can check this by testing if you can find the conda command (which conda). If you do have conda installed then it's a good idea to update conda so you have the latest version conda update conda. If you don't have this software installed then go to the miniconda install page and follow the instructions for your OS. After the install, make sure your install is up-to-date conda update conda.
 
