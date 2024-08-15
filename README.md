@@ -47,14 +47,6 @@ git clone https://github.com/dsarov/SPANDx.git ./spandx
 ```
 conda env create --name spandx -f ./spandx/env.yaml
 ```
-Long version for those unfamiliar with environments or just want all the steps for recommended installation
-Make sure you have the conda package manager installed (e.g. Anaconda, miniconda). You can check this by testing if you can find the conda command (which conda). If you do have conda installed then it's a good idea to update conda so you have the latest version conda update conda. If you don't have this software installed then go to the miniconda install page and follow the instructions for your OS. After the install, make sure your install is up-to-date conda update conda.
-
-Create a new environment with conda called "spandx" and install the software with 
-```
-conda create --name spandx -c dsarov -c bioconda spandx
-```
-Follow the instructions and the software should fully install with all dependencies.
 
 Activate the spandx environment that was installed by conda, 
 
