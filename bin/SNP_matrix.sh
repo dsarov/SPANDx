@@ -194,28 +194,38 @@ done
 
 awk '
     BEGIN { FS=OFS="\t" }
-    FNR == 1 && NR == FNR {
-        print; # print header from the first file only
-        next;
+    # Process the header
+    NR == FNR && FNR == 1 {
+        header = $0
+        next
     }
-    FNR > 1 {
-        if (NR == FNR) { # storing values from the first matrix
-            for (i=2; i<=NF; i++) matrix[FNR,i] = $i;
-        } else { # processing and adding values for the second matrix
-            printf $1; # print the sample name
-            for (i=2; i<=FNR; i++) {
-                if (i == FNR) {
-                    printf OFS "-"; # print "-" for diagonal
-                } else if (i < FNR) {
-                    printf OFS ""; # keep lower triangle empty
+    # Process the body of the matrices
+    NR == FNR {
+        for (i = 1; i <= NF; i++) matrix[FNR, i] = $i
+        next
+    }
+    # Skip the header of the second file
+    FNR == 1 { print header; next }
+    # Sum the upper triangle values of the matrix
+    {
+        printf $1 # Print the row label without a newline
+        for (i = 2; i <= NF; i++) {
+            if (i < FNR) {
+                printf OFS # Print an OFS for lower triangle elements
+            } else if (i == FNR) {
+                printf "%s-", OFS # Print the "-" for diagonal elements
+            } else {
+                val1 = matrix[FNR, i]
+                val2 = $i
+                if (val1 == "-" || val2 == "-") {
+                    sum = "-" # Preserve the "-" for non-numeric fields
                 } else {
-                    # Add and print for upper triangle
-                    sum = matrix[FNR,i] == "-" ? $i : ($i == "-" ? matrix[FNR,i] : matrix[FNR,i] + $i);
-                    printf OFS sum;
+                    sum = val1 + val2 # Add the numeric values
                 }
+                printf "%s", OFS sum
             }
-            printf "\n";
         }
+        print "" # End the line
     }
 ' "$output_indel" "$output_snp" > merged_snp_indel_matrix.tsv
 
