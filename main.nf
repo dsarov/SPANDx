@@ -128,8 +128,20 @@ Optional Parameters:
   --unaligned    Optionally output unaligned reads. Useful for identifying
                  accessory genome in comparison to a reference or removing
                  unwanted contamination from raw read data (default: false).
+                 Currently experimental
 
-                 Currently unaligend is set to $params.unaligned
+                 Currently unaligned is set to $params.unaligned
+
+  --fast         Uses a different set of tools (i.e. strobealign for alignment)
+                 to complete the pipeline quicker. Currently experimental
+
+                 Currently ONT is set to $params.fast
+
+  --ONT          Specify a directory with Oxford Nanopore Technologies (nanopore) data
+
+                 Currently ONT is set to $params.ONT
+
+
 
 If you want to make changes to the default `nextflow.config` file
 clone the workflow into a local directory and change parameters
@@ -153,30 +165,41 @@ Update to the local cache of this workflow:
 ref=params.ref
 snpeff_database=params.database
 
-if( params.pairing == "PE") {
-fastq = Channel
-  .fromFilePairs("${params.fastq}", flat: true)
-	.ifEmpty { exit 1, """
+/*
+ * Improved Nextflow code to detect and load both single-end and paired-end FASTQ files
+ * into separate channels.
+ */
+
+paired_end_fastq = Channel
+    .fromFilePairs("${params.fastq}", flat: true, optional: true)
+    .map { id, files -> tuple(id, files) }
+    .ifEmpty {
+        log.info "No paired-end files found matching pattern: ${params.fastq}"
+        return null
+    }
+
+single_end_fastq = Channel
+    .fromPath("${params.fastq}", checkIfExists: true)
+    .filter { !it.name.contains("_1") && !it.name.contains("_2") }
+    .map { file -> tuple(file.baseName, file) }
+    .ifEmpty {
+        log.info "No single-end files found matching pattern: ${params.fastq}"
+        return null
+    }
+
+// Combine both channels, allowing the pipeline to handle both types
+fastq = paired_end_fastq.mix(single_end_fastq).ifEmpty {
+    exit 1, """
 
 Input read files could not be found.
-Have you included the read files in the current directory and do they have the correct naming?
-With the parameters specified, SPANDx is looking for reads named ${params.fastq}.
-To fix this error either rename your reads to match this formatting or specify the desired format
-when initializing SPANDx e.g. --fastq "*_{1,2}_sequence.fastq.gz"
+Please check that you have included the read files in the current directory and that they have the correct naming.
+SPANDx is looking for reads named ${params.fastq}.
+To fix this error, either rename your reads to match the expected formatting or specify the desired format
+when initializing SPANDx e.g. --fastq "*_1_sequence.fastq.gz" for single-end or "*_{1,2}_sequence.fastq.gz" for paired-end.
 
-  """ }
-} else {
-fastq = Channel
-.fromPath("${params.fastq}")
-.ifEmpty { exit 1, """
+"""
+}
 
-Input read files could not be found.
-Have you included the read files in the current directory and do they have the correct naming?
-With the parameters specified, SPANDx is looking for reads named ${params.fastq}.
-To fix this error either rename your reads to match this formatting or specify the desired format
-when initializing SPANDx e.g. --fastq "*_1_sequence.fastq.gz"
-
-""" }
 .map { file ->
       def id = file.name.toString().tokenize('_').get(0)
       return tuple(id, file)
@@ -369,6 +392,67 @@ if( params.pairing == "PE") {
                Part 2C: Align reads against the reference
 =======================================================================
 */
+if (params.fast) {
+  if (params.assemblies) {
+  process ReferenceAlignment_assembly {
+
+    label "spandx_alignment"
+    tag {"$id"}
+
+    input:
+    file ref_index from ref_index_ch
+    file refcov from refcov_ch
+    set id, file(forward), file(reverse) from alignment.mix(alignment_assembly)
+
+    output:
+    set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+    set id, file("${id}.depth.txt") into depth_bam
+
+    """
+    strobealign ref ${forward} ${reverse} > ${id}.sam
+    samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+    samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
+    samtools index ${id}.bam
+    rm ${id}.sam ${id}.bam_tmp
+    mosdepth --by ${refcov} ${id}.output ${id}.bam
+    sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+    total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+    echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
+    """
+
+  }
+  } else {
+    process ReferenceAlignment {
+
+      label "spandx_alignment"
+      tag {"$id"}
+
+      input:
+      file ref_index from ref_index_ch
+      file refcov from refcov_ch
+      set id, file(forward), file(reverse) from alignment // Reads
+
+      output:
+      set id, file("${id}.bam"), file("${id}.bam.bai") into dup
+      set id, file("${id}.depth.txt") into depth_bam
+
+      """
+      bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
+      -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
+      samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+      samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
+      samtools index ${id}.bam
+      rm ${id}.sam ${id}.bam_tmp
+      mosdepth --by ${refcov} ${id}.output ${id}.bam
+      sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+      total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+      echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
+      """
+    }
+  }
+
+} else {
+
 if (params.assemblies) {
 process ReferenceAlignment_assembly {
 
@@ -394,7 +478,7 @@ process ReferenceAlignment_assembly {
   mosdepth --by ${refcov} ${id}.output ${id}.bam
   sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
   total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-  echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
+  echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
   """
 
 }
@@ -423,7 +507,7 @@ process ReferenceAlignment_assembly {
     mosdepth --by ${refcov} ${id}.output ${id}.bam
     sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
     total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-    echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
+    echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
     """
   }
 }
