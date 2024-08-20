@@ -417,7 +417,7 @@ if (params.fast) {
     mosdepth --by ${refcov} ${id}.output ${id}.bam
     sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
     total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-    echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
+    echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
     """
 
   }
@@ -446,7 +446,7 @@ if (params.fast) {
       mosdepth --by ${refcov} ${id}.output ${id}.bam
       sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
       total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-      echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
+      echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
       """
     }
   }
@@ -478,7 +478,7 @@ process ReferenceAlignment_assembly {
   mosdepth --by ${refcov} ${id}.output ${id}.bam
   sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
   total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-  echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
+  echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
   """
 
 }
@@ -507,7 +507,7 @@ process ReferenceAlignment_assembly {
     mosdepth --by ${refcov} ${id}.output ${id}.bam
     sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
     total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-    echo "\$sum_depth/\$total_chromosomes" | awk '{printf "%.0f\n", \$1/\$2}' > ${id}.depth.txt
+    echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
     """
   }
 }
@@ -606,7 +606,7 @@ process ReferenceAlignment_assembly {
       mosdepth --by ${refcov} ${id}.output ${id}.bam
       sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
       total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-      echo "\$sum_depth/\$total_chromosomes" | bc > ${id}.depth.txt
+      echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
       """
     }
 
