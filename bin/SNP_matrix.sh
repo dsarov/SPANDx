@@ -195,29 +195,39 @@ done
 awk '
     BEGIN { FS=OFS="\t" }
     FNR == 1 && NR == FNR {
-        print; # print header from the first file only
+        # Store the header from the first file
+        for (i = 1; i <= NF; i++) header[i] = $i;
         next;
     }
-    FNR > 1 {
-        if (NR == FNR) { # storing values from the first matrix
-            for (i=2; i<=NF; i++) matrix[FNR,i] = $i;
-        } else { # processing and adding values for the second matrix
-            printf $1; # print the sample name
-            for (i=2; i<=FNR; i++) {
-                if (i == FNR) {
-                    printf OFS "-"; # print "-" for diagonal
-                } else if (i < FNR) {
-                    printf OFS ""; # keep lower triangle empty
-                } else {
-                    # Add and print for upper triangle
-                    sum = matrix[FNR,i] == "-" ? $i : ($i == "-" ? matrix[FNR,i] : matrix[FNR,i] + $i);
-                    printf OFS sum;
-                }
+    FNR == 1 {
+        # Print the header only once, from the first file
+        for (i = 1; i <= NF; i++) printf "%s%s", header[i], (i < NF ? OFS : ORS);
+        next;
+    }
+    FNR > 1 && NR == FNR {
+        # Store the values from the first matrix
+        for (i = 2; i <= NF; i++) matrix[FNR, i] = ($i == "-" ? 0 : $i);
+    }
+    FNR > 1 && NR > FNR {
+        # Process and merge the values from the second matrix
+        printf "%s", $1;  # print the sample name
+        for (i = 2; i <= NF; i++) {
+            if (i == FNR) {
+                printf OFS "-";  # print "-" for diagonal
+            } else if (i < FNR) {
+                printf OFS "";  # leave lower triangle blank
+            } else {
+                # Merge values from both matrices, treating "-" as 0
+                val1 = (matrix[FNR, i] == 0 ? 0 : matrix[FNR, i]);
+                val2 = ($i == "-" ? 0 : $i);
+                sum = val1 + val2;
+                printf OFS sum;
             }
-            printf "\n";
         }
+        printf ORS;
     }
 ' "$output_indel" "$output_snp" > merged_snp_indel_matrix.tsv
+
 
 
 ###############################################

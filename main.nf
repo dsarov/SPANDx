@@ -1,9 +1,11 @@
 #!/usr/bin/env nextflow
 
+nextflow.enable.dsl=2
+
 /*
  *
  *  Pipeline            NF-SPANDx
- *  Version             v4.0.4
+ *  Version             v4.1
  *  Description         A comparative genomics pipeline
  *  Authors             Derek Sarovich, Erin Price
  *
@@ -12,7 +14,7 @@
 log.info """
 ================================================================================
                            NF-SPANDx
-                             v4.0.4
+                             v4.1
 ================================================================================
 
 Thanks for using SPANDx!!
@@ -41,11 +43,7 @@ re-sequencing datasets - BMC Research Notes 2014, 7:618"
 ################################################################################
 
 
-Input Parameter:
-
-    --fastq      Input PE read file wildcard (default: "*_{1,2}.fastq.gz")
-
-                 Currently this is set to $params.fastq
+Required Parameters:
 
     --ref        Reference genome for alignment. Must match genome used
                  in --database (default: k96243.fasta)
@@ -53,6 +51,10 @@ Input Parameter:
                  Currently you are using $params.ref
 
 Optional Parameters:
+
+  --fastq        Input PE read file wildcard (default: "*_{1,2}.fastq.gz")
+
+                 Currently this is set to $params.fastq
 
   --annotation   Optionally output annotated variant tables.
                  If you want to annotate the variant output then
@@ -73,10 +75,11 @@ Optional Parameters:
 
                  Currently phylogeny is set to $params.phylogeny
 
-  --pairing      Optionally use single-end Illumina data. By default SPANDx expects
-                 paired-end read data.
+  --single_end   Optionally use single-end Illumina data. By default SPANDx expects
+                 paired-end read data. Set this variable to the directory containing
+                 single end reads
 
-                 Currently pairing is set to $params.pairing
+                 Currently pairing is set to $params.single_end
 
   --window       Default window size used in the bedcov coverage assessment
                  (default: 1kb)
@@ -135,11 +138,18 @@ Optional Parameters:
   --fast         Uses a different set of tools (i.e. strobealign for alignment)
                  to complete the pipeline quicker. Currently experimental
 
-                 Currently ONT is set to $params.fast
+                 Currently fast is set to $params.fast
 
-  --ONT          Specify a directory with Oxford Nanopore Technologies (nanopore) data
+  --ont          Set to true if you have Oxford Nanopore Technologies (ONT; nanopore) data
 
-                 Currently ONT is set to $params.ONT
+                 Currently ont is set to $params.ont
+  --ont_dir      Optionally specify a directory containing ONT data
+
+                 Currently ont_dir set to $params.ont_dir
+
+  --freebayes    Optionally switch to using freebayes as a variant caller instead of the GATK
+
+                 Currently freebayes is set to $params.freebayes
 
 
 
@@ -169,45 +179,108 @@ snpeff_database=params.database
  * Improved Nextflow code to detect and load both single-end and paired-end FASTQ files
  * into separate channels.
  */
+ // Initialize the paired_end_fastq channel from file pairs
+ /*
+ paired_end_fastq = Channel
+     .fromFilePairs("${params.fastq}", size: 2, flat: true)
+     .ifEmpty {
+         log.info("No paired-end FASTQ files found matching pattern: ${params.fastq}")
+         return Channel.empty() // Return an empty channel to avoid null issues
+     }
+     .map { id, files -> tuple(id, files) }
+*/
 
-paired_end_fastq = Channel
-    .fromFilePairs("${params.fastq}", flat: true, optional: true)
-    .map { id, files -> tuple(id, files) }
-    .ifEmpty {
-        log.info "No paired-end files found matching pattern: ${params.fastq}"
-        return null
-    }
+     fastq = Channel
+       .fromFilePairs("${params.fastq}", flat: true)
+     	.ifEmpty { exit 1, """ Input read files could not be found.
+     Have you included the read files in the current directory and do they have the correct naming?
+     With the parameters specified, ARDaP is looking for reads named ${params.fastq}.
+     To fix this error either rename your reads to match this formatting or specify the desired format
+     when initializing ARDaP e.g. --fastq "*_{1,2}_sequence.fastq.gz"
+
+     """
+     }
+
+/*
+Channel
+     .fromFilePairs("${params.fastq}", size: 2, flat: true)
+     .ifEmpty {
+         log.info("No paired-end FASTQ files found matching pattern: ${params.fastq}") }
+     .map { id, files -> tuple(id, files) }
+     .set { paired_end_fastq }
+     log.info("Found paired end reads matching pattern: ${params.fastq}")
+*/
 
 single_end_fastq = Channel
-    .fromPath("${params.fastq}", checkIfExists: true)
-    .filter { !it.name.contains("_1") && !it.name.contains("_2") }
-    .map { file -> tuple(file.baseName, file) }
+  .fromPath("${params.single_end_dir}")
+  .map { file ->
+      if (!params.single_end) {
+          log.info("Found SE data, but assembly analysis not requested. Skipping files")
+      } else {
+          log.info("Found SE data. Adding to analysis")
+          def id = file.name.toString().tokenize('.').get(0)
+          return tuple(id, file)
+      }
+  }
+  .ifEmpty {
+    log.info("No single-end FASTQ files found.")
+    params.single_end = false }
+//  .ifNotEmpty {
+//    log.info("Found single-end FASTQ files.")
+//  }
+
+ont_reads = Channel
+  .fromPath("${params.ont_dir}/*.{fastq,fq}.gz")
+  .map { file ->
+      if (!params.ont) {
+          log.info("Found ont data, but assembly analysis not requested. Skipping files")
+          return null
+      } else {
+          log.info("Found ont data. Adding to analysis")
+          def id = file.name.find(/(.+?)\.(fastq|fq)\.gz$/) { it[1] }
+          return tuple(id, file)
+      }
+  }
+  .ifEmpty {
+    log.info("No ont files found or ont analysis was not requested")
+    ont = false }
+//  .ifNotEmpty {
+//    log.info("Found ONT FASTQ files.")
+//}
+
+//load in assemblies
+assembly_ch = Channel
+    .fromPath("${params.assembly_dir}")
+    .map { file ->
+        if (!params.assemblies) {
+            log.info("Found assembly files, but assembly analysis not requested. Skipping files")
+            return null
+        } else {
+            log.info("Found assembly files. Adding to analysis")
+            def id = file.name.toString().replaceAll(/\.fasta$/, '')
+            return tuple(id, file)
+        }
+    }
     .ifEmpty {
-        log.info "No single-end files found matching pattern: ${params.fastq}"
-        return null
+        log.info("No assembly files found.")
+        assemblies = false
     }
 
-// Combine both channels, allowing the pipeline to handle both types
-fastq = paired_end_fastq.mix(single_end_fastq).ifEmpty {
-    exit 1, """
-
+/*
 Input read files could not be found.
 Please check that you have included the read files in the current directory and that they have the correct naming.
 SPANDx is looking for reads named ${params.fastq}.
 To fix this error, either rename your reads to match the expected formatting or specify the desired format
 when initializing SPANDx e.g. --fastq "*_1_sequence.fastq.gz" for single-end or "*_{1,2}_sequence.fastq.gz" for paired-end.
+*/
 
-"""
-}
 
-.map { file ->
-      def id = file.name.toString().tokenize('_').get(0)
-      return tuple(id, file)
-    }
-}
 
 
 reference_file = file(params.ref)
+reference = params.ref
+reference_name = reference_file.baseName
+
 if( !reference_file.exists() ) {
   exit 1, """
 SPANDx can't find the reference file.
@@ -216,16 +289,13 @@ Please check that you have included the reference file in the current directory 
 """
 }
 
-if(params.annotation) {
-  //check if database has been provided
-  if(params.database) {
-    println "Annotation has been requested. Looking for annotation database"
-    process check_and_dl_database {
+
+process check_and_dl_database {
 
     label "snpeff_dl_db"
 
     input:
-    file reference from reference_file
+    file reference
 
     conda = ""
     executor 'local'
@@ -234,29 +304,6 @@ if(params.annotation) {
     """
     bash Check_and_DL_SnpEff_database.sh ${params.database} ${baseDir} ${ref}
     """
-  }
- }  else {
-
-     exit 1, """
-     SPANDx requires a snpEff database to be specified for the annotation to work correctly
-     Please use the --database flag to specific a snpEff database compatable with your
-     reference genome.
-     A list of available databases can be found here https://sourceforge.net/projects/snpeff/files/
-     Please make sure the snpEff version matches the database version.
-     """
-   }
-}
-
-//load in assemblies
-
-if (params.assemblies) {
-  assembly_ch = Channel
-    .fromPath("${params.assembly_loc}", checkIfExists: true)
-    .ifEmpty {"No assembled genomes will be processed"}
-    .map { file ->
-      def id = file.name.toString().tokenize('.').get(0)
-      return tuple(id, file)
-    }
 }
 
 /*
@@ -270,21 +317,25 @@ process IndexReference {
         label "index"
 
         input:
-        file reference from reference_file
+        file reference_file
 
         output:
-        file "ref.*" into ref_index_ch
-        file "${reference}.fai" into ref_fai_ch1
-        file "${reference.baseName}.dict" into ref_dict_ch1
-        file "${reference}.bed" into refcov_ch
+        path "ref.*", emit: ref_indices
+        path "*.fai", emit: fai_files
+        path "*.dict", emit: dict_files
+        path "*.bed", emit: bed_files
 
+        script:
+        reference_path = file(params.ref)
+        reference_name = reference_path.baseName
         """
         bwa index -a is -p ref $reference
         samtools faidx $reference
-        picard CreateSequenceDictionary R=$reference O=${reference.baseName}.dict
+        picard CreateSequenceDictionary R=$reference O=${reference_name}.dict
         bedtools makewindows -g ${reference}.fai -w $params.window > ${reference}.bed
         """
 }
+
 
 /*
 ======================================================================
@@ -292,26 +343,25 @@ process IndexReference {
 ======================================================================
 */
 
-if (params.assemblies) {
-  process Read_synthesis {
+
+process Read_synthesis {
     label "spandx_default"
-    tag {"$id"}
+    tag { "$id" }
 
     input:
-    set id, file(assembly) from assembly_ch
+    tuple val(id), file(assembly_ch)
 
     output:
-    set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into alignment_assembly
+    tuple val(id), path("${id}_1_cov.fq.gz"), path("${id}_2_cov.fq.gz")
 
     """
-    art_illumina -i ${assembly} -p -l 150 -f 30 -m 500 -s 10 -ss HS25 -na -o ${id}_out
+    art_illumina -i ${assembly_ch} -p -l 150 -f 30 -m 500 -s 10 -ss HS25 -na -o ${id}_out
     mv ${id}_out1.fq ${id}_1_cov.fq
     mv ${id}_out2.fq ${id}_2_cov.fq
     gzip ${id}_1_cov.fq
     gzip ${id}_2_cov.fq
     """
   }
-}
 
 
 /*
@@ -321,39 +371,70 @@ Part 2: read processing, reference alignment and variant identification
 // Variant calling sub-workflow - basically SPANDx with a tonne of updates
 // Careful here, not sure if the output overwrites the symlinks
 // created by Nextflow (if input is .fq.gz) and would do weird stuff?
+*/
 
+
+/*
 =======================================================================
    Part 2A: Trim reads with light quality filter and remove adapters
 =======================================================================
 */
-if( params.pairing == "PE") {
-  process Trimmomatic {
+process Trimmomatic {
 
-      label "spandx_default"
-      tag {"$id"}
+    label "spandx_default"
+    tag { "$id" }
 
-      input:
-      set id, file(forward), file(reverse) from fastq
+    input:
+    tuple val(id), file(forward), file(reverse)
 
-      output:
-      set id, "${id}_1.fq.gz", "${id}_2.fq.gz" into downsample
+    output:
+    tuple val(id), path("${id}_1.fq.temp.gz"), path("${id}_2.fq.temp.gz")
 
-      script:
-      if (params.notrim) {
+    script:
+    if (params.notrim) {
         """
-        mv ${forward} ${id}_1.fq.gz
-        mv ${reverse} ${id}_2.fq.gz
+        mv ${forward} ${id}_1.fq.temp.gz
+        mv ${reverse} ${id}_2.fq.temp.gz
         """
-      } else {
+    } else {
         """
         trimmomatic PE -threads 1 ${forward} ${reverse} \
-        ${id}_1.fq.gz ${id}_1_u.fq.gz ${id}_2.fq.gz ${id}_2_u.fq.gz \
-        ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
+        ${id}_1.fq.temp.gz ${id}_1_u.fq.gz ${id}_2.fq.temp.gz ${id}_2_u.fq.gz \
+        ILLUMINACLIP:${projectDir}/resources/all_adapters.fa:2:30:10: \
         LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
         rm ${id}_1_u.fq.gz ${id}_2_u.fq.gz
         """
     }
-  }
+}
+
+// ont processing
+
+process minimapAlign {
+    label "spandx_default"
+    tag { "$id" }
+    publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
+
+    input:
+    file ref_indices
+    tuple val(id), file(ont_reads)
+    file reference
+    file bed_files
+
+    output:
+    tuple val(id), path("${id}.dedup.bam"), path("${id}.dedup.bam.bai"), emit: dedup_bams
+    tuple val(id), path("${id}.depth.txt"), emit:depth_files
+
+    script:
+    """
+    minimap2 -ax map-ont -t ${task.cpus} ${reference} ${ont_reads} | samtools sort -o ${id}.dedup.bam
+    samtools index ${id}.dedup.bam
+    mosdepth --by ${ref}.bed ${id}.output ${id}.dedup.bam
+    sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+    total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+    echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}' > "${id}.depth.txt"
+    """
+}
+
 /*
 =======================================================================
               Part 2B: Downsample reads to increase speed
@@ -363,13 +444,13 @@ if( params.pairing == "PE") {
 
       label "spandx_default"
       tag { "$id" }
-    //  publishDir "./Clean_reads", mode: 'copy', overwrite: false
+    // publishDir "./Clean_reads", mode: 'copy', overwrite: false
 
       input:
-      set id, file(forward), file(reverse) from downsample
+      tuple val(id), file(forward), file(reverse)
 
       output:
-      set id, file("${id}_1_cov.fq.gz"), file("${id}_2_cov.fq.gz") into (alignment)
+      tuple val(id), path("${id}_1_cov.fq.gz"), path("${id}_2_cov.fq.gz")
 
       script:
       if (params.size > 0) {
@@ -392,111 +473,81 @@ if( params.pairing == "PE") {
                Part 2C: Align reads against the reference
 =======================================================================
 */
-if (params.fast) {
-  if (params.assemblies) {
-  process ReferenceAlignment_assembly {
 
-    label "spandx_alignment"
-    tag {"$id"}
-
-    input:
-    file ref_index from ref_index_ch
-    file refcov from refcov_ch
-    set id, file(forward), file(reverse) from alignment.mix(alignment_assembly)
-
-    output:
-    set id, file("${id}.bam"), file("${id}.bam.bai") into dup
-    set id, file("${id}.depth.txt") into depth_bam
-
-    """
-    strobealign ref ${forward} ${reverse} > ${id}.sam
-    samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
-    samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
-    samtools index ${id}.bam
-    rm ${id}.sam ${id}.bam_tmp
-    mosdepth --by ${refcov} ${id}.output ${id}.bam
-    sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
-    total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-    echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
-    """
-
-  }
-  } else {
-    process ReferenceAlignment {
-
-      label "spandx_alignment"
-      tag {"$id"}
-
-      input:
-      file ref_index from ref_index_ch
-      file refcov from refcov_ch
-      set id, file(forward), file(reverse) from alignment // Reads
-
-      output:
-      set id, file("${id}.bam"), file("${id}.bam.bai") into dup
-      set id, file("${id}.depth.txt") into depth_bam
-
-      """
-      bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
-      -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
-      samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
-      samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
-      samtools index ${id}.bam
-      rm ${id}.sam ${id}.bam_tmp
-      mosdepth --by ${refcov} ${id}.output ${id}.bam
-      sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
-      total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-      echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
-      """
-    }
-  }
-
-} else {
-
-if (params.assemblies) {
 process ReferenceAlignment_assembly {
 
   label "spandx_alignment"
-  tag {"$id"}
+  tag { "$id" }
+  publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
 
   input:
-  file ref_index from ref_index_ch
-  file refcov from refcov_ch
-  set id, file(forward), file(reverse) from alignment.mix(alignment_assembly)
+  file ref_indices
+  tuple val(id), file(forward), file(reverse)
+  file reference
+  file bed_files
 
   output:
-  set id, file("${id}.bam"), file("${id}.bam.bai") into dup
-  set id, file("${id}.depth.txt") into depth_bam
+  tuple val(id), path("${id}.dedup.bam"), path("${id}.dedup.bam.bai"), emit: dedup_bams
+  tuple val(id), path("${id}.depth.txt"), emit:depth_files
 
+  script:
+  if(params.fast) {
+  """
+  strobealign --rg-id ID:${id} --rg SM:${id} --rg PL:ILLUMINA ${ref} ${forward} ${reverse} > ${id}.sam
+  samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+  samtools sort -@ 1 -o ${id}.dedup.bam ${id}.bam_tmp
+  samtools index ${id}.dedup.bam
+  rm ${id}.sam ${id}.bam_tmp
+  mosdepth --by ${ref}.bed ${id}.output ${id}.dedup.bam
+  sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+  total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+  echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}' > "${id}.depth.txt"
+  """
+  } else {
   """
   bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
   -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
   samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
-  samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
-  samtools index ${id}.bam
+  samtools sort -@ 1 -o ${id}.dedup.bam ${id}.bam_tmp
+  samtools index ${id}.dedup.bam
   rm ${id}.sam ${id}.bam_tmp
-  mosdepth --by ${refcov} ${id}.output ${id}.bam
+  mosdepth --by ${ref}.bed ${id}.output ${id}.dedup.bam
   sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
   total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-  echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
+  echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}' > "${id}.depth.txt"
   """
-
+  }
 }
-} else {
-  process ReferenceAlignment {
+
+process ReferenceAlignment {
 
     label "spandx_alignment"
-    tag {"$id"}
+    tag { "$id" }
 
     input:
-    file ref_index from ref_index_ch
-    file refcov from refcov_ch
-    set id, file(forward), file(reverse) from alignment // Reads
+    file ref_indices
+    tuple val(id), file(forward), file(reverse)
+    file reference
+    file bed_files
 
     output:
-    set id, file("${id}.bam"), file("${id}.bam.bai") into dup
-    set id, file("${id}.depth.txt") into depth_bam
+    tuple val(id), path("${id}.bam"), path("${id}.bam.bai"), emit:bams
+    tuple val(id), path("${id}.depth.txt"), emit:depth_files
 
+    script:
+    if(params.fast) {
+    """
+    strobealign  --rg-id ID:${id} --rg SM:${id} --rg PL:ILLUMINA ${ref} ${forward} ${reverse} > ${id}.sam
+    samtools view -h -b -@ 1 -q 1 -o ${id}.bam_tmp ${id}.sam
+    samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
+    samtools index ${id}.bam
+    rm ${id}.sam ${id}.bam_tmp
+    mosdepth --by ${ref}.bed ${id}.output ${id}.bam
+    sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
+    total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
+    echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}' > "${id}.depth.txt"
+    """
+    } else {
     """
     bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
     -t $task.cpus ref ${forward} ${reverse} > ${id}.sam
@@ -504,14 +555,14 @@ process ReferenceAlignment_assembly {
     samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
     samtools index ${id}.bam
     rm ${id}.sam ${id}.bam_tmp
-    mosdepth --by ${refcov} ${id}.output ${id}.bam
+    mosdepth --by ${ref}.bed ${id}.output ${id}.bam
     sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
     total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-    echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
+    echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}' > "${id}.depth.txt"
     """
   }
 }
-} else {  /*
+  /*
   =======================================================================
   Part 2: read processing, reference alignment and variant identification
   =======================================================================
@@ -523,17 +574,16 @@ process ReferenceAlignment_assembly {
      Part 2A: Trim reads with light quality filter and remove adapters
   =======================================================================
   */
-
-    process Trimmomatic_SE {
+process Trimmomatic_SE {
 
         label "spandx_default"
-        tag {"$id"}
+        tag { "$id" }
 
         input:
-        set id, file(forward) from fastq
+        val(id), file(forward)
 
         output:
-        set id, file("${id}_1.fq.gz") into downsample
+        val(id), file("${id}_1.fq.gz")
 
         script:
         if (params.notrim) {
@@ -546,24 +596,24 @@ process ReferenceAlignment_assembly {
           ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
           LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
           """
-      }
-    }
+        }
+}
   /*
   =======================================================================
                 Part 2B: Downsample reads to increase speed
   =======================================================================
   */
-    process Downsample_SE {
+process Downsample_SE {
 
         label "spandx_default"
         tag { "$id" }
       //  publishDir "./Clean_reads", mode: 'copy', overwrite: false
 
         input:
-        set id, file(forward) from downsample
+        val(id), file(forward)
 
         output:
-        set id, file("${id}_1_cov.fq.gz") into alignment
+        val(id), file("${id}_1_cov.fq.gz")
 
         script:
         if (params.size > 0) {
@@ -575,26 +625,27 @@ process ReferenceAlignment_assembly {
           """
           mv ${forward} ${id}_1_cov.fq.gz
           """
-      }
     }
+}
   /*
   =======================================================================
                  Part 2C: Align reads against the reference
   =======================================================================
   */
-    process ReferenceAlignment_SE {
+process SE_reference_alignment {
 
       label "spandx_alignment"
-      tag {"$id"}
+      tag { "$id" }
 
       input:
-      file ref_index from ref_index_ch
-      set id, file(forward) from alignment
-      file refcov from refcov_ch
+      file ref_indices
+      tuple val(id), file(forward)
+      file reference
+      file bed_files
 
       output:
-      set id, file("${id}.bam"), file("${id}.bam.bai") into dup
-      set id, file("${id}.depth.txt") into depth_bam
+      val(id), file("${id}.bam"), file("${id}.bam.bai")
+      val(id), file("${id}.depth.txt")
 
       """
       bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
@@ -603,13 +654,11 @@ process ReferenceAlignment_assembly {
       samtools sort -@ 1 -o ${id}.bam ${id}.bam_tmp
       samtools index ${id}.bam
       rm ${id}.sam ${id}.bam_tmp
-      mosdepth --by ${refcov} ${id}.output ${id}.bam
+      mosdepth --by ${ref}.bed ${id}.output ${id}.bam
       sum_depth=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | awk '{s+=\$1}END{print s}')
       total_chromosomes=\$(zcat ${id}.output.regions.bed.gz | awk '{print \$4}' | wc -l)
-      echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}'
+      echo "\$sum_depth \$total_chromosomes" | awk '{print int(\$1/\$2)}' > "${id}.depth.txt"
       """
-    }
-
 }
 
 /*
@@ -629,14 +678,13 @@ process Deduplicate {
     }
 
     input:
-    set id, file(bam_alignment), file(bam_index) from dup
-    // file("*.raw.gvcf") from gvcf_files.collect()
+    tuple val(id), path(bam_file), path(bai_file)
 
     output:
-    set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") into (averageCoverage, variantCalling, mixturePindel, variantcallingGVCF_ch)
+    tuple val(id), path("${id}.dedup.bam"), path("${id}.dedup.bam.bai"), emit: dedup_bams
 
     if (params.unaligned) {
-    set id, file("${id}_unmapped_1_sequence.fastq.gz"), file("${id}_unmapped_2_sequence.fastq.gz")
+    val(id), file("${id}_unmapped_1_sequence.fastq.gz"), file("${id}_unmapped_2_sequence.fastq.gz")
     }
 
     script:
@@ -669,60 +717,148 @@ process ReferenceCoverage {
     tag { "$id" }
 
     input:
-    file refcov from refcov_ch
-    set id, file(dedup_bam), file(dedup_bam_bai) from averageCoverage
+    file ref_indices
+    tuple val(id), path(dedup_bam), path(dedup_bam_bai)
 
     output:
-    set id, file("${id}.bedcov")
-    file("${id}.bedcov") into bedcov_files
+    tuple val(id), path("*.bedcov"), emit: bedcov_files
 
+    script:
     """
-    bedtools coverage -sorted -a ${refcov} -b ${dedup_bam} > ${id}.bedcov
+    bedtools coverage -sorted -a ${ref_indices[0]} -b ${dedup_bam} > ${id}.bedcov
     """
+}
 
+process Merge_bedcov {
+  label "bedcov"
+  tag { "$id" }
+  publishDir "./Outputs/Coverage", mode: 'copy', overwrite: true
+
+  input:
+  file bedcov_files
+
+  output:
+  path "Bedcov_merge.txt"
+
+  """
+  bash Bedcov_merge.sh
+  """
 }
 /*
 =======================================================================
                         Part 2F: Variant identification
 =======================================================================
 */
-if (params.mixtures) {
+process VariantCallingMixture {
 
-  process VariantCallingMixture {
-
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_gatk"
     tag { "$id" }
+    publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
 
 
     input:
-    file reference from reference_file
-    file reference_fai from ref_fai_ch1
-    file reference_dict from ref_dict_ch1
-    set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") from variantCalling
+    file reference
+    file fai_files
+    file dict_files
+    tuple val(id), path(bam_file), path(bai_file)
 
     output:
-    set id, file("${id}.raw.snps.indels.mixed.vcf"), file("${id}.raw.snps.indels.mixed.vcf.idx") into mixtureFilter
+    tuple val(id), path("${id}.raw.snps.indels.mixed.gvcf"), emit: gvcf_files
+    tuple val(id), path("${id}.raw.snps.indels.mixed.vcf"), path("${id}.raw.snps.indels.mixed.vcf.idx"), emit: vcf_files
 
+    script:
+    if (params.freebayes) {
     """
-    gatk HaplotypeCaller -R ${reference} --I ${id}.dedup.bam -O ${id}.raw.snps.indels.mixed.vcf
+    freebayes --gvcf -f ${reference} ${id}.dedup.bam > ${id}.raw.snps.indels.mixed.gvcf
+    bcftools view ${id}.raw.snps.indels.mixed.gvcf | awk '{gsub(/<\\*>/, "<NON_REF>"); print}' > converted_output.g.vcf
+    mv converted_output.g.vcf ${id}.raw.snps.indels.mixed.gvcf
+    gatk SelectVariants -V ${id}.raw.snps.indels.mixed.gvcf -O ${id}.raw.snps.indels.mixed.vcf --exclude-non-variants
     """
-  }
+    } else {
+    """
+     gatk HaplotypeCaller -ERC GVCF -R ${reference} --I ${id}.dedup.bam -O ${id}.raw.snps.indels.mixed.gvcf
+     gatk SelectVariants -V ${id}.raw.snps.indels.mixed.gvcf -O ${id}.raw.snps.indels.mixed.vcf --exclude-non-variants
+    """
+    }
+}
 
-  process VariantFilterMixture {
+process VariantCallingMixture_Clair3 {
+
+    conda "$baseDir/env_clair3.yaml"
+    label "spandx_clair3"
+    tag { "$id" }
+    publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
+
+    input:
+    file reference
+    file fai_files
+    file dict_files
+    tuple val(id), path(bam_file), path(bai_file)
+
+    output:
+    tuple val(id), path("${id}.raw.snps.indels.mixed.gvcf"), emit: gvcf_files
+    tuple val(id), path("${id}.raw.snps.indels.mixed.vcf"), path("${id}.raw.snps.indels.mixed.vcf.idx"), emit: vcf_files
+
+    script:
+    """
+    run_clair3.sh --bam_fn ${id}.dedup.bam --ref_fn ${reference} --threads $task.cpus \
+    --model_path "${baseDir}"/resources/clair3_models/ont_guppy5 --output ./ -p ont --fast_mode \
+    --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs --fast_mode
+    gunzip *.gz
+    mv merge_output.vcf "${id}.raw.snps.indels.mixed.vcf"
+    mv merge_output.gvcf "${id}.raw.snps.indels.mixed.gvcf"
+    gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.vcf"
+    gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.gvcf"
+    """
+}
+
+process VariantCalling_Clair3 {
+
+    conda "spandx_clair3"
+    label "spandx_clair3"
+    tag { "$id" }
+    publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
+
+    input:
+    file reference
+    file fai_files
+    file dict_files
+    tuple val(id), path(bam_file), path(bai_file)
+
+    output:
+    tuple val(id), path("${id}.raw.snps.indels.mixed.gvcf"), emit: gvcf_files
+    tuple val(id), path("${id}.raw.snps.indels.mixed.vcf"), path("${id}.raw.snps.indels.mixed.vcf.idx"), emit: vcf_files
+
+    script:
+    """
+    run_clair3.sh --bam_fn ${id}.dedup.bam --ref_fn ${reference} --threads $task.cpus \
+    --model_path "${baseDir}"/resources/clair3_models/ont_guppy5 --output ./ -p ont --fast_mode \
+    --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs --fast_mode
+    gunzip *.gz
+    mv merge_output.vcf "${id}.raw.snps.indels.mixed.vcf"
+    mv merge_output.gvcf "${id}.raw.snps.indels.mixed.gvcf"
+    gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.vcf"
+    gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.gvcf"
+    """
+
+}
+process VariantFilterMixture {
 
     label "spandx_gatk"
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
     input:
-    file reference from reference_file
-    file reference_fai from ref_fai_ch1
-    file reference_dict from ref_dict_ch1
-    set id, file(variants), file(variants_index) from mixtureFilter
+    file reference
+    file reference_fai
+    file reference_dict
+    tuple val(id), file(variants), file(variants_index)
 
     output:
-    set id, file("${id}.PASS.snps.indels.mixed.vcf"), file("${id}.FAIL.snps.indels.mixed.vcf") into filteredMixture
+    tuple val(id), path("${id}.PASS.snps.indels.mixed.vcf"), path("${id}.FAIL.snps.indels.mixed.vcf")
 
+    script:
     """
     gatk VariantFiltration -R ${reference} -O ${id}.snps.indels.filtered.mixed.vcf -V $variants \
     -filter "MQ < $params.MQ_SNP" --filter-name "MQFilter" \
@@ -734,44 +870,43 @@ if (params.mixtures) {
 		cat ${id}.snps.indels.filtered.mixed.vcf | awk -F'\t' '\$7 == "PASS" {print}' | cat snp_head - > ${id}.PASS.snps.indels.mixed.vcf
     cat ${id}.snps.indels.filtered.mixed.vcf | awk -F'\t' '\$7 != "PASS" {print}' | cat snp_head - > ${id}.FAIL.snps.indels.mixed.vcf
     """
-  }
+}
 
-  if (params.annotation) {
-      process AnnotateMixture {
+process AnnotateMixture {
 
       label "spandx_snpeff"
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
       input:
-      set id, file("${id}.PASS.snps.indels.mixed.vcf"), file("${id}.FAIL.snps.indels.mixed.vcf") from filteredMixture
+      tuple val(id), path("${id}.PASS.snps.indels.mixed.vcf"), path("${id}.FAIL.snps.indels.mixed.vcf")
 
       output:
-      set id, file("${id}.ALL.annotated.mixture.vcf") into mixtureArdapProcessing
+      tuple val(id), path("${id}.ALL.annotated.mixture.vcf")
 
       //Check to see if there is a databae in the default location then run
+      script:
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
       """
-      }
-  }
+}
+
 
 
 // TO DO - needs to be updated with Delly
-  if (params.structural) {
-    process PindelProcessing {
+process PindelProcessing {
 
       label "spandx_pindel"
       tag { "$id" }
 
       input:
-      file reference from reference_file
-      file reference_fai from ref_fai_ch1
-      set id, file("${id}.dedup.bam"), file(alignment_index) from mixturePindel
+      file reference
+      file reference_fai
+      val(id), file("${id}.dedup.bam"), file(alignment_index)
 
       output:
-      file("pindel.out_D.vcf") into mixtureDeletionSummary
-      file("pindel.out_TD.vcf") into mixtureDuplicationSummary
+      file("pindel.out_D.vcf")
+      file("pindel.out_TD.vcf")
 
       // Pindel + threads to run a bit faster
       // In the original script, there is a pindel.out_INT, here: pindel.out_INT_final
@@ -791,58 +926,64 @@ if (params.mixtures) {
         }
       done
       """
-    }
-  }
-
-} else {
+}
 
     //Not a mixture
-    //To do split GVCF calling when phylogeny isn't called
-
-    process VariantCalling {
+process VariantCalling {
 
       label "spandx_gatk"
       tag { "$id" }
-      //publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: false, pattern: '*.gvcf'
+      publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: false, pattern: '*.gvcf'
 
       input:
-      file reference from reference_file
-      file reference_fai from ref_fai_ch1
-      file reference_dict from ref_dict_ch1
-      set id, file(dedup_bam), file(dedup_index) from variantCalling
+      file reference
+      file fai_files
+      file dict_files
+      tuple val(id), path(dedup_bam), path(bai_file)
 
       output:
-      set id, file("${id}.raw.snps.vcf"), file("${id}.raw.snps.vcf.idx") into snpFilter
-      set id, file("${id}.raw.indels.vcf"), file("${id}.raw.indels.vcf.idx") into indelFilter
-      //file("${id}.raw.gvcf") into gvcf_files
-  //    val true into gvcf_complete_ch
+      tuple val(id), path("${id}.raw.snps.vcf"), path("${id}.raw.snps.vcf.idx"), emit: snps_output
+      tuple val(id), path("${id}.raw.indels.vcf"), path("${id}.raw.indels.vcf.idx"), emit: indels_output
+      tuple val(id), path("${id}.raw.snps.indels.gvcf"), emit: gvcf_files
 
-      // v1.4 Line 261 not included yet: gatk HaplotypeCaller -R $reference -ERC GVCF --I $GATK_REALIGNED_BAM -O $GATK_RAW_VARIANTS
-
+      script:
+      if (params.freebayes) {
       """
-      gatk HaplotypeCaller -R ${reference} --ploidy 1 --I ${dedup_bam} -O ${id}.raw.snps.indels.vcf
+      freebayes --gvcf -f ${reference} ${id}.dedup.bam > ${id}.raw.snps.indels.gvcf
+      bcftools view ${id}.raw.snps.indels.mixed.gvcf | awk '{gsub(/<\\*>/, "<NON_REF>"); print}' > converted_output.g.vcf
+      mv converted_output.g.vcf ${id}.raw.snps.indels.mixed.gvcf
+      gatk SelectVariants -V ${id}.raw.snps.indels.gvcf -O ${id}.raw.snps.indels.vcf --exclude-non-variants
       gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.vcf -O ${id}.raw.snps.vcf -select-type SNP
       gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.vcf -O ${id}.raw.indels.vcf -select-type INDEL
       """
-    }
+      } else {
+      """
+       gatk HaplotypeCaller -R ${reference} -ERC GVCF --ploidy 1 --I ${dedup_bam} -O ${id}.raw.snps.indels.gvcf
+       ## gatk SelectVariants -V ${id}.raw.snps.indels.gvcf -O ${id}.raw.snps.indels.vcf --exclude-non-variants
+       gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.gvcf -O ${id}.raw.snps.vcf -select-type SNP --ignore-non-ref-in-types
+       gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.gvcf -O ${id}.raw.indels.vcf -select-type INDEL --ignore-non-ref-in-types
+      """
+      }
+}
 
-  process FilterSNPs {
+process FilterSNPs {
 
     label "spandx_gatk"
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
     input:
-    file reference from reference_file
-    file reference_fai from ref_fai_ch1
-    file reference_dict from ref_dict_ch1
-    set id, file(snps), file(snps_idx) from snpFilter
+    file reference
+    file reference_fai
+    file reference_dict
+    tuple val(id), path(snps_vcf), path(snp_vcf_idx)
 
     output:
-    set id, file("${id}.PASS.snps.vcf"), file("${id}.FAIL.snps.vcf") into filteredSNPs
+    tuple val(id), path("${id}.PASS.snps.vcf"), path("${id}.FAIL.snps.vcf")
 
+    script:
     """
-    gatk VariantFiltration -R ${reference} -O ${id}.filtered.snps.vcf -V $snps \
+    gatk VariantFiltration -R ${reference} -O ${id}.filtered.snps.vcf -V ${id}.raw.snps.vcf \
     --cluster-size $params.CLUSTER_SNP -window $params.CLUSTER_WINDOW_SNP \
     -filter "MLEAF < $params.MLEAF_SNP" --filter-name "AFFilter" \
     -filter "QD < $params.QD_SNP" --filter-name "QDFilter" \
@@ -854,7 +995,7 @@ if (params.mixtures) {
 		head -n "\$header" ${id}.filtered.snps.vcf > snp_head
 		cat ${id}.filtered.snps.vcf | grep PASS | cat snp_head - > ${id}.PASS.snps.vcf
 
-    gatk VariantFiltration -R ${reference} -O ${id}.failed.snps.vcf -V $snps \
+    gatk VariantFiltration -R ${reference} -O ${id}.failed.snps.vcf -V ${id}.raw.snps.vcf \
     --cluster-size $params.CLUSTER_SNP -window $params.CLUSTER_WINDOW_SNP \
     -filter "MLEAF < $params.MLEAF_SNP" --filter-name "FAIL" \
     -filter "QD < $params.QD_SNP" --filter-name "FAIL1" \
@@ -866,25 +1007,26 @@ if (params.mixtures) {
 		head -n "\$header" ${id}.failed.snps.vcf > snp_head
 		cat ${id}.failed.snps.vcf | grep FAIL | cat snp_head - > ${id}.FAIL.snps.vcf
     """
-  }
+}
 
-  process FilterIndels {
+process FilterIndels {
 
     label "spandx_gatk"
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
     input:
-    file reference from reference_file
-    file reference_fai from ref_fai_ch1
-    file reference_dict from ref_dict_ch1
-    set id, file(indels), file(indels_idx) from indelFilter
+    file reference
+    file reference_fai
+    file reference_dict
+    tuple val(id), path(indel_vcf), path(indel_vcf_idx)
 
     output:
-    set id, file("${id}.PASS.indels.vcf"), file("${id}.FAIL.indels.vcf") into filteredIndels
+    tuple val(id), path("${id}.PASS.indels.vcf"), path("${id}.FAIL.indels.vcf")
 
+    script:
     """
-    gatk VariantFiltration -R $reference -O ${id}.filtered.indels.vcf -V $indels \
+    gatk VariantFiltration -R $reference -O ${id}.filtered.indels.vcf -V ${id}.raw.indels.vcf \
     -filter "MLEAF < $params.MLEAF_INDEL" --filter-name "AFFilter" \
     -filter "QD < $params.QD_INDEL" --filter-name "QDFilter" \
     -filter "FS > $params.FS_INDEL" --filter-name "FSFilter" \
@@ -894,7 +1036,7 @@ if (params.mixtures) {
 		head -n "\$header" ${id}.filtered.indels.vcf > snp_head
 		cat ${id}.filtered.indels.vcf | grep PASS | cat snp_head - > ${id}.PASS.indels.vcf
 
-    gatk VariantFiltration -R  $reference -O ${id}.failed.indels.vcf -V $indels \
+    gatk VariantFiltration -R  $reference -O ${id}.failed.indels.vcf -V ${id}.raw.indels.vcf \
     -filter "MLEAF < $params.MLEAF_INDEL" --filter-name "FAIL" \
     -filter "MQ < $params.MQ_INDEL" --filter-name "FAIL1" \
     -filter "QD < $params.QD_INDEL" --filter-name "FAIL2" \
@@ -905,48 +1047,46 @@ if (params.mixtures) {
 		head -n "\$header" ${id}.failed.indels.vcf > indel_head
 		cat ${id}.failed.indels.vcf | grep FAIL | cat indel_head - > ${id}.FAIL.indels.vcf
     """
-  }
+}
 
-  if (params.annotation) {
-    process AnnotateSNPs {
+process AnnotateSNPs {
 
       label "spandx_snpeff"
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
       input:
-      set id, file(snp_pass), file(snp_fail) from filteredSNPs
+      tuple val(id), path(snp_pass), path(snp_fail)
 
       output:
-      set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
+      tuple val(id), path("${id}.PASS.snps.annotated.vcf")
 
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
+      snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
 
-    }
+}
 
 
-  process AnnotateIndels {
+process AnnotateIndels {
 
     label "spandx_snpeff"
     tag { "$id" }
     publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
     input:
-    set id, file(indel_pass), file(indel_fail) from filteredIndels
+    tuple val(id), path(indel_pass), path(indel_fail)
 
     output:
-    set id, file("${id}.PASS.indels.annotated.vcf") into annotatedIndels
+    tuple val(id), path("${id}.PASS.indels.annotated.vcf")
 
     //Look for the annotation in the default location
     """
-    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
+    snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
     """
 
-  }
- }
 }
+
 
 /*
 ===========================================================================
@@ -955,63 +1095,23 @@ if (params.mixtures) {
 =
 ===========================================================================
 */
-process Merge_bedcov {
-  label "bedcov"
-  tag { "$id" }
-  publishDir "./Outputs/Coverage", mode: 'copy', overwrite: true
 
-  input:
-  path "*" from bedcov_files.collect()
-
-  output:
-  file("Bedcov_merge.txt")
-
-  """
-  bash Bedcov_merge.sh
-  """
-}
-
-
-if (params.phylogeny) {
-
-  process VariantCallingGVCF {
-
-    label "spandx_gatk"
-    tag { "$id" }
-    publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
-
-    input:
-    file reference from reference_file
-    file reference_fai from ref_fai_ch1
-    file reference_dict from ref_dict_ch1
-    set id, file("${id}.dedup.bam"), file("${id}.dedup.bam.bai") from variantcallingGVCF_ch
-
-    output:
-    set id, file("${id}.raw.gvcf")
-	  file("${id}.raw.gvcf") into gvcf_files
-
-
-    """
-    gatk HaplotypeCaller -R ${reference} -ERC GVCF --I ${id}.dedup.bam -O ${id}.raw.gvcf
-    """
-  }
-
-  process Master_vcf {
+process Master_vcf {
     label "master_vcf"
     publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: true
 
     input:
-    path "*"  from gvcf_files.collect()
-    file reference from reference_file
-    file reference_fai from ref_fai_ch1
-    file reference_dict from ref_dict_ch1
+    file gvcfs
+    file reference_file
+    file reference_fai
+    file reference_dict
 
     output:
-    set file("out.filtered.vcf"), file("out.vcf") into snp_matrix_ch
+    tuple path("out.filtered.vcf"), path("out.vcf")
 
     script:
     """
-    bash Master_vcf.sh ${reference.baseName}
+    bash Master_vcf.sh ${reference_name}
     gatk VariantFiltration -R ${reference} -O out.filtered.vcf -V out.vcf \
     --cluster-size $params.CLUSTER_SNP -window $params.CLUSTER_WINDOW_SNP \
     -filter "QD < $params.QD_SNP" --filter-name "QDFilter" \
@@ -1019,30 +1119,30 @@ if (params.phylogeny) {
     -filter "FS > $params.FS_SNP" --filter-name "HaplotypeScoreFilter"
     """
 
-  }
-  if (params.annotation) {
-    process snp_matrix {
+}
+
+process snp_matrix {
       label "SNP_matrix"
       publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: true
+      publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: true, pattern: '*.nex'
 
       input:
-      set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
-      file depthFiles from depth_bam.collect()
+      path(filtered_vcf)
+      file depthFiles
 
       output:
-      file("Ortho_SNP_matrix.nex")
-      file("MP_phylogeny.tre")
-      file("ML_phylogeny.tre")
-      file("All_SNPs_indels_annotated.txt")
-      file("indel_matrix.nex")
-      file("indel_SNP_matrix.nex")
-      file("QC_metrics_summary.tsv")
-      file("indel_differences_matrix.tsv")
-      file("snp_differences_matrix.tsv")
-      file("merged_snp_indel_matrix.tsv")
+      path("Ortho_SNP_matrix.nex")
+      path("MP_phylogeny.tre")
+      path("ML_phylogeny.tre")
+      path("All_SNPs_indels_annotated.txt")
+      path("indel_matrix.nex")
+      path("indel_SNP_matrix.nex")
+      path("QC_metrics_summary.tsv")
+      path("indel_differences_matrix.tsv")
+      path("snp_differences_matrix.tsv")
+      path("merged_snp_indel_matrix.tsv")
 
       script:
-
       def cmd = ""
       if (params.mixtures) {
           cmd = """
@@ -1060,31 +1160,165 @@ if (params.phylogeny) {
       $cmd
       """
 
-    }
- } else {
-   process snp_matrix_no_annotate {
+}
+
+process snp_matrix_no_annotate {
       label "SNP_matrix"
       publishDir "./Outputs/Phylogeny", mode: 'copy', overwrite: true
 
       input:
-      set file(filtered_vcf), file(out_vcf) from snp_matrix_ch
+      path(filtered_vcf) //, path(out_vcf)
 
       output:
-      file("Ortho_SNP_matrix.nex")
-      file("MP_phylogeny.tre")
-      file("ML_phylogeny.tre")
-
+      path("Ortho_SNP_matrix.nex")
+      path("MP_phylogeny.tre")
+      path("ML_phylogeny.tre")
 
       script:
       """
       bash SNP_matrix_no_annotate.sh ${baseDir}
       """
+}
+
+
+workflow {
+
+  // Annotation database check and download if required
+  if (params.annotation) {
+    if (params.database) {
+        println "Annotation has been requested. Looking for annotation database"
+        check_and_dl_database(reference_file)
+     } else {
+        exit 1, """
+        SPANDx requires a snpEff database to be specified for the annotation to work correctly.
+        Please use the --database flag to specify a snpEff database compatible with your
+        reference genome.
+        A list of available databases can be found here: https://sourceforge.net/projects/snpeff/files/
+        Please make sure the snpEff version matches the database version.
+        """
+     }
+   }
+
+  // Create reference indices, dictionary, and BED files
+  indexResults = IndexReference(reference_file)
+
+  // Generate synthetic reads if assemblies are present
+  if (params.assemblies) {
+      alignment_assembly = Read_synthesis(assembly_ch)
   }
- }
+
+  // Trim reads with Trimmomatic
+  trimmed_reads = Trimmomatic(fastq)
+
+  // Downsample reads if requested
+  downsampled_reads = Downsample(trimmed_reads)
+
+  all_bam_files = Channel.empty()
+  all_depth_files = Channel.empty()
+  assembly_bam_files = Channel.empty()
+
+  // Align reads against the reference
+  bam_files = ReferenceAlignment(indexResults.ref_indices, downsampled_reads, reference_file, indexResults.bed_files)
+  deduplicated_bams = Deduplicate(bam_files.bams)
+//
+  if (params.assemblies) {
+    deduplicated_bams_assemblies = ReferenceAlignment_assembly(indexResults.ref_indices, alignment_assembly, reference_file, indexResults.bed_files)
+  } else {
+    deduplicated_bams_assemblies = Channel.empty()
+  }
+
+ if (params.ont) {
+    deduplicated_bams_ont = minimapAlign(indexResults.ref_indices, ont_reads, reference_file, indexResults.bed_files)
+      if (params.mixtures) {
+        all_variants_ont = VariantCallingMixture_Clair3(reference_file, indexResults.fai_files, indexResults.dict_files, deduplicated_bams_ont.dedup_bams)
+      } else {
+        all_variants_ont = VariantCalling_Clair3(reference_file, indexResults.fai_files, indexResults.dict_files, deduplicated_bams_ont.dedup_bams)
+      }
+  }  else {
+    deduplicated_bams_ont = Channel.empty()
+  }
+
+
+deduplicated_bams.dedup_bams.mix(deduplicated_bams_assemblies.dedup_bams, deduplicated_bams_ont.dedup_bams).set {all_deduplicated_bams}
+deduplicated_bams.dedup_bams.mix(deduplicated_bams_assemblies.dedup_bams).set {all_deduplicated_bams_ex_ont}
+//  if (params.single_end) {
+//    SE_bam_files = SE_reference_alignment(indexResults.ref_indices, single_end_fastq, reference_file, indexResults.bed_files)
+//    deduplicated_bams = Deduplicate(SE_bam_files.bams)
+//  }
+
+  // Calculate coverage statistics
+  bedcov_files = ReferenceCoverage(indexResults.bed_files, all_deduplicated_bams).collect()
+
+  // Merge bedcov files
+  merged_bedcov = Merge_bedcov(bedcov_files)
+
+  // Merge the channels into a single channel
+
+//TROUBLE WITH DIFFERENT DEDUPLICATED BAM CHANNELS HERE!!!!
+
+  // Variant Calling and Filtering
+  if (params.mixtures) {
+    all_variants = VariantCallingMixture(reference_file, indexResults.fai_files, indexResults.dict_files, all_deduplicated_bams_ex_ont)
+    if (params.ont) {
+    all_variants.vcf_files.mix(all_variants_ont.vcf_files).set {all_var_inc_ont}
+    filtered_mixed_variants = VariantFilterMixture(reference_file, indexResults.fai_files, indexResults.dict_files, all_var_inc_ont)
+    } else {
+    filtered_mixed_variants = VariantFilterMixture(reference_file, indexResults.fai_files, indexResults.dict_files, all_variants.vcf_files)
+    }
+
+
+    if (params.annotation) {
+      annotated_mixed_variants = AnnotateMixture(filtered_mixed_variants)
+    }
+
+    //  if (params.structural) {
+    //      structural_variants = PindelProcessing(reference_file, reference_fai, reference_dict, deduplicated_bams)
+    //  }
+
+  } else {
+    // Standard variant calling for non-mixture samples
+      all_variants = VariantCalling(reference_file, indexResults.fai_files, indexResults.dict_files, all_deduplicated_bams.dedup_bams)
+      if (params.ont) {
+        all_variants.vcf_files.mix(all_variants_ont.vcf_files).set {all_var_inc_ont}
+        filtered_snps = FilterSNPs(reference_file, indexResults.fai_files, indexResults.dict_files, all_var_inc_ont)
+        filtered_indels = FilterIndels(reference_file, indexResults.fai_files, indexResults.dict_files, all_var_inc_ont)
+      } else {
+        filtered_snps = FilterSNPs(reference_file, indexResults.fai_files, indexResults.dict_files, all_variants.snps_output)
+        filtered_indels = FilterIndels(reference_file, indexResults.fai_files, indexResults.dict_files, all_variants.indels_output)
+      }
+
+      if (params.annotation) {
+        annotated_snps = AnnotateSNPs(filtered_snps)
+        annotated_indels = AnnotateIndels(filtered_indels)
+      }
+  }
+
+  // If phylogeny is enabled, create a master VCF and SNP matrix
+  if (params.phylogeny) {
+    if (params.ont) {
+      all_variants.gvcf_files.mix(all_variants_ont.gvcf_files).set {all_gvcf_var_inc_ont}
+      snp_matrix_ch = Master_vcf(all_gvcf_var_inc_ont.collect(), reference_file, indexResults.fai_files, indexResults.dict_files)
+      if (params.annotation) {
+        bam_files.depth_files.mix(deduplicated_bams_assemblies.depth_files, deduplicated_bams_ont.depth_files).set {all_depth_files}
+        depth_files_collected = all_depth_files.collect()
+        phylogeny_outputs = snp_matrix(snp_matrix_ch, depth_files_collected)
+      } else {
+        phylogeny_outputs = snp_matrix_no_annotate(snp_matrix_ch)
+      }
+    } else {
+      snp_matrix_ch = Master_vcf(all_variants.gvcf_files.collect(), reference_file, indexResults.fai_files, indexResults.dict_files)
+      if (params.annotation) {
+        depth_files_collected = bam_files.depth_files.collect()
+        phylogeny_outputs = snp_matrix(snp_matrix_ch, depth_files_collected)
+      } else {
+        phylogeny_outputs = snp_matrix_no_annotate(snp_matrix_ch)
+      }
+    }
+  }
 }
 
 workflow.onComplete {
-	println ( workflow.success ? "\nDone! Result files are in --> ./Outputs\n \
+  println ( workflow.success ? "\nDone! Result files are in --> ./Outputs\n \
   If further analysis is required, bam alignments are in --> ./Outputs/bams\n \
   Phylogenetic tree and annotated merged variants are in --> ./Outputs/Phylogeny_and_annotation\n \
   Individual variant files are in --> ./Outputs/Variants/VCFs\n" \
