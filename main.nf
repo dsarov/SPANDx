@@ -12,7 +12,7 @@
 log.info """
 ================================================================================
                            NF-SPANDx
-                             v4.0.4
+                             v4.0.5
 ================================================================================
 
 Thanks for using SPANDx!!
@@ -667,7 +667,7 @@ if (params.mixtures) {
 
       //Check to see if there is a databae in the default location then run
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
       """
       }
   }
@@ -837,7 +837,7 @@ if (params.mixtures) {
       set id, file("${id}.PASS.snps.annotated.vcf") into annotatedSNPs
 
       """
-      snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
+      snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
 
     }
@@ -857,7 +857,7 @@ if (params.mixtures) {
 
     //Look for the annotation in the default location
     """
-    snpEff eff -t -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
+    snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
     """
 
   }
@@ -962,13 +962,13 @@ if (params.phylogeny) {
       def cmd = ""
       if (params.mixtures) {
           cmd = """
-          bash SNP_matrix.sh ${snpeff_database} ${baseDir}
-          bash Summary.sh ${ref} ${baseDir}
+          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir}
+          bash ${baseDir}/bin/Summary.sh ${ref} ${baseDir}
           """
       } else {
           cmd = """
-          bash SNP_matrix.sh ${snpeff_database} ${baseDir}
-          bash Summary_no_mixtures.sh ${ref} ${baseDir}
+          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir}
+          bash ${baseDir}/bin/Summary_no_mixtures.sh ${ref} ${baseDir}
           """
       }
 
