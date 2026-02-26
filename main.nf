@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 /*
  *
  *  Pipeline            NF-SPANDx
- *  Version             v4.1
+ *  Version             v4.2
  *  Description         A comparative genomics pipeline
  *  Authors             Derek Sarovich, Erin Price
  *
@@ -14,7 +14,7 @@ nextflow.enable.dsl=2
 log.info """
 ================================================================================
                            NF-SPANDx
-                             v4.1
+                             v4.2
 ================================================================================
 
 Thanks for using SPANDx!!
@@ -194,9 +194,9 @@ snpeff_database=params.database
        .fromFilePairs("${params.fastq}", flat: true)
      	.ifEmpty { exit 1, """ Input read files could not be found.
      Have you included the read files in the current directory and do they have the correct naming?
-     With the parameters specified, ARDaP is looking for reads named ${params.fastq}.
+     With the parameters specified, SPANDx is looking for reads named ${params.fastq}.
      To fix this error either rename your reads to match this formatting or specify the desired format
-     when initializing ARDaP e.g. --fastq "*_{1,2}_sequence.fastq.gz"
+     when initializing SPANDx e.g. --fastq "*_{1,2}_sequence.fastq.gz"
 
      """
      }
@@ -210,62 +210,69 @@ Channel
      .set { paired_end_fastq }
      log.info("Found paired end reads matching pattern: ${params.fastq}")
 */
+// --- Local copies of params for channel closures ---
+def run_se = params.single_end
+def run_ont = params.ont
+def run_asm = params.assemblies
 
-single_end_fastq = Channel
-  .fromPath("${params.single_end_dir}")
-  .map { file ->
-      if (!params.single_end) {
-          log.info("Found SE data, but assembly analysis not requested. Skipping files")
-      } else {
-          log.info("Found SE data. Adding to analysis")
-          def id = file.name.toString().tokenize('.').get(0)
-          return tuple(id, file)
-      }
-  }
-  .ifEmpty {
-    log.info("No single-end FASTQ files found.")
-    params.single_end = false }
-//  .ifNotEmpty {
-//    log.info("Found single-end FASTQ files.")
-//  }
-
-ont_reads = Channel
-  .fromPath("${params.ont_dir}/*.{fastq,fq}.gz")
-  .map { file ->
-      if (!params.ont) {
-          log.info("Found ont data, but assembly analysis not requested. Skipping files")
-          return null
-      } else {
-          log.info("Found ont data. Adding to analysis")
-          def id = file.name.find(/(.+?)\.(fastq|fq)\.gz$/) { it[1] }
-          return tuple(id, file)
-      }
-  }
-  .ifEmpty {
-    log.info("No ont files found or ont analysis was not requested")
-    ont = false }
-//  .ifNotEmpty {
-//    log.info("Found ONT FASTQ files.")
-//}
-
-//load in assemblies
-assembly_ch = Channel
-    .fromPath("${params.assembly_dir}")
+// --- Single-End Reads ---
+def logged_se = false
+def single_end_files = Channel.empty() // 1. Initialize as empty
+if (run_se) {
+    single_end_files = Channel.fromPath("${params.single_end_dir}/*.{fastq,fq}.gz", checkIfExists: true)
+}
+single_end_fastq = single_end_files
     .map { file ->
-        if (!params.assemblies) {
-            log.info("Found assembly files, but assembly analysis not requested. Skipping files")
-            return null
-        } else {
-            log.info("Found assembly files. Adding to analysis")
-            def id = file.name.toString().replaceAll(/\.fasta$/, '')
-            return tuple(id, file)
+        if (!logged_se) { // 4. "Log once" logic is now safely inside the map
+            log.info("Found SE data. Adding to analysis")
+            logged_se = true
         }
+        def id = file.name.toString().tokenize('.').get(0)
+        return tuple(id, file)
+    }
+    .ifEmpty { // 5. Log if the channel was empty (no files found or param was false)
+        log.info("No single-end FASTQ files found.")
+    }
+
+// --- ONT Reads ---
+def logged_ont = false
+def ont_files = Channel.empty()
+if (run_ont) {
+    ont_files = Channel.fromPath("${params.ont_dir}/*.{fastq,fq}.gz", checkIfExists: true)
+}
+ont_reads = ont_files
+    .map { file ->
+        if (!logged_ont) {
+            log.info("Found ont data. Adding to analysis")
+            logged_ont = true
+        }
+        def id = file.name.find(/(.+?)\.(fastq|fq)\.gz$/) { it[1] }
+        return tuple(id, file)
     }
     .ifEmpty {
-        log.info("No assembly files found.")
-        assemblies = false
+        log.info("No ont files found or ont analysis was not requested")
     }
 
+// --- Assembly Files ---
+def logged_asm = false
+def assembly_files = Channel.empty()
+if (run_asm) { // This is a boolean check (true/false)
+    // This now looks for uncompressed files in the 'assemblies' directory
+    assembly_files = Channel.fromPath("assemblies/*.{fasta,fa,fna}", checkIfExists: true)
+}
+assembly_ch = assembly_files
+    .map { file ->
+        if (!logged_asm) {
+            log.info("Found assembly data. Adding to analysis")
+            logged_asm = true
+        }
+        // Removed .gz from the regex
+        def id = file.name.find(/(.+?)\.(fasta|fa|fna)$/) { it[1] }
+        return tuple(id, file)
+    }
+    .ifEmpty {
+      log.info("No assembly files found or assembly analysis was not requested")
+    }
 /*
 Input read files could not be found.
 Please check that you have included the read files in the current directory and that they have the correct naming.
@@ -291,7 +298,7 @@ Please check that you have included the reference file in the current directory 
 
 
 process check_and_dl_database {
-
+    conda "$baseDir/env_spandx.yaml"
     label "snpeff_dl_db"
 
     input:
@@ -302,7 +309,7 @@ process check_and_dl_database {
 
     script:
     """
-    bash Check_and_DL_SnpEff_database.sh ${params.database} ${baseDir} ${ref}
+    bash ${baseDir}/bin/Check_and_DL_SnpEff_database.sh ${params.database} ${baseDir} ${ref} ${params.snpeff_cache} ${params.snpeff_config} 
     """
 }
 
@@ -314,6 +321,7 @@ process check_and_dl_database {
 
 process IndexReference {
 
+        conda "$baseDir/env_spandx.yaml"
         label "index"
 
         input:
@@ -345,6 +353,8 @@ process IndexReference {
 
 
 process Read_synthesis {
+
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_default"
     tag { "$id" }
 
@@ -381,6 +391,7 @@ Part 2: read processing, reference alignment and variant identification
 */
 process Trimmomatic {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_default"
     tag { "$id" }
 
@@ -410,6 +421,8 @@ process Trimmomatic {
 // ont processing
 
 process minimapAlign {
+
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_default"
     tag { "$id" }
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
@@ -442,6 +455,7 @@ process minimapAlign {
 */
   process Downsample {
 
+      conda "$baseDir/env_spandx.yaml"
       label "spandx_default"
       tag { "$id" }
     // publishDir "./Clean_reads", mode: 'copy', overwrite: false
@@ -476,6 +490,7 @@ process minimapAlign {
 
 process ReferenceAlignment_assembly {
 
+  conda "$baseDir/env_spandx.yaml"
   label "spandx_alignment"
   tag { "$id" }
   publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
@@ -521,6 +536,7 @@ process ReferenceAlignment_assembly {
 
 process ReferenceAlignment {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_alignment"
     tag { "$id" }
 
@@ -575,28 +591,28 @@ process ReferenceAlignment {
   =======================================================================
   */
 process Trimmomatic_SE {
+    conda "$baseDir/env_spandx.yaml"
+    label "spandx_default"
+    tag { "$id" }
 
-        label "spandx_default"
-        tag { "$id" }
+    input:
+    tuple val(id), path(forward)
 
-        input:
-        val(id), file(forward)
+    output:
+    tuple val(id), path("${id}_1.fq.gz")
 
-        output:
-        val(id), file("${id}_1.fq.gz")
-
-        script:
-        if (params.notrim) {
-          """
-          mv ${forward} ${id}_1.fq.gz
-          """
-        } else {
-          """
-          trimmomatic SE -threads 1 ${forward} ${id}_1.fq.gz \
-          ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
-          LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
-          """
-        }
+    script:
+    if (params.notrim) {
+        """
+        mv $forward ${id}_1.fq.gz
+        """
+    } else {
+        """
+        trimmomatic SE -threads 1 $forward ${id}_1.fq.gz \
+        ILLUMINACLIP:${baseDir}/resources/all_adapters.fa:2:30:10: \
+        LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36
+        """
+    }
 }
   /*
   =======================================================================
@@ -604,27 +620,25 @@ process Trimmomatic_SE {
   =======================================================================
   */
 process Downsample_SE {
+    conda "$baseDir/env_spandx.yaml"
+    label "spandx_default"
+    tag { "$id" }
 
-        label "spandx_default"
-        tag { "$id" }
-      //  publishDir "./Clean_reads", mode: 'copy', overwrite: false
+    input:
+    tuple val(id), path(forward)
 
-        input:
-        val(id), file(forward)
+    output:
+    tuple val(id), path("${id}_1_cov.fq.gz")
 
-        output:
-        val(id), file("${id}_1_cov.fq.gz")
-
-        script:
-        if (params.size > 0) {
-          """
-          seqtk sample -s 11 ${forward} $params.size | gzip - > ${id}_1_cov.fq.gz
-          """
-         } else {
-              // Rename files if not downsampled and feed into alignment channel
-          """
-          mv ${forward} ${id}_1_cov.fq.gz
-          """
+    script:
+    if (params.size > 0) {
+        """
+        seqtk sample -s 11 $forward $params.size | gzip - > ${id}_1_cov.fq.gz
+        """
+    } else {
+        """
+        mv $forward ${id}_1_cov.fq.gz
+        """
     }
 }
   /*
@@ -634,19 +648,21 @@ process Downsample_SE {
   */
 process SE_reference_alignment {
 
+      conda "$baseDir/env_spandx.yaml"
       label "spandx_alignment"
       tag { "$id" }
 
       input:
-      file ref_indices
-      tuple val(id), file(forward)
-      file reference
-      file bed_files
+      path ref_indices
+      tuple val(id), path(forward)
+      path reference
+      path bed_files
 
       output:
-      val(id), file("${id}.bam"), file("${id}.bam.bai")
-      val(id), file("${id}.depth.txt")
-
+      tuple val(id), path("${id}.bam"), path("${id}.bam.bai")
+      tuple val(id), path("${id}.depth.txt")
+      
+	  script:
       """
       bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
       -t $task.cpus ref ${forward} > ${id}.sam
@@ -668,6 +684,7 @@ process SE_reference_alignment {
 */
 process Deduplicate {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_default"
     tag { "$id" }
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
@@ -713,6 +730,7 @@ process Deduplicate {
 */
 process ReferenceCoverage {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_default"
     tag { "$id" }
 
@@ -730,8 +748,10 @@ process ReferenceCoverage {
 }
 
 process Merge_bedcov {
+
+  conda "$baseDir/env_spandx.yaml"
   label "bedcov"
-  tag { "$id" }
+// tag { "$id" }
   publishDir "./Outputs/Coverage", mode: 'copy', overwrite: true
 
   input:
@@ -741,7 +761,7 @@ process Merge_bedcov {
   path "Bedcov_merge.txt"
 
   """
-  bash Bedcov_merge.sh
+  bash ${baseDir}/bin/Bedcov_merge.sh
   """
 }
 /*
@@ -789,6 +809,7 @@ process VariantCallingMixture_Clair3 {
     label "spandx_clair3"
     tag { "$id" }
     publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
+    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true, pattern: '*.vcf'
 
     input:
     file reference
@@ -799,26 +820,32 @@ process VariantCallingMixture_Clair3 {
     output:
     tuple val(id), path("${id}.raw.snps.indels.mixed.gvcf"), emit: gvcf_files
     tuple val(id), path("${id}.raw.snps.indels.mixed.vcf"), path("${id}.raw.snps.indels.mixed.vcf.idx"), emit: vcf_files
+    tuple val(id), path("${id}.raw.snps.vcf"), path("${id}.raw.snps.vcf.idx"), emit: snps_output
+    tuple val(id), path("${id}.raw.indels.vcf"), path("${id}.raw.indels.vcf.idx"), emit: indels_output
 
     script:
     """
     run_clair3.sh --bam_fn ${id}.dedup.bam --ref_fn ${reference} --threads $task.cpus \
-    --model_path "${baseDir}"/resources/clair3_models/ont_guppy5 --output ./ -p ont --fast_mode \
+    --model_path "${baseDir}"/resources/clair3_models/r941_prom_sup_g5014 --output ./ -p ont --fast_mode \
     --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs --fast_mode
     gunzip *.gz
     mv merge_output.vcf "${id}.raw.snps.indels.mixed.vcf"
     mv merge_output.gvcf "${id}.raw.snps.indels.mixed.gvcf"
     gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.vcf"
     gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.gvcf"
+
+    gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.mixed.vcf -O ${id}.raw.snps.vcf -select-type SNP
+    gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.mixed.vcf -O ${id}.raw.indels.vcf -select-type INDEL
     """
 }
 
 process VariantCalling_Clair3 {
 
-    conda "spandx_clair3"
+    conda "$baseDir/env_clair3.yaml"
     label "spandx_clair3"
     tag { "$id" }
     publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
+    publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true, pattern: '*.vcf'
 
     input:
     file reference
@@ -829,22 +856,28 @@ process VariantCalling_Clair3 {
     output:
     tuple val(id), path("${id}.raw.snps.indels.mixed.gvcf"), emit: gvcf_files
     tuple val(id), path("${id}.raw.snps.indels.mixed.vcf"), path("${id}.raw.snps.indels.mixed.vcf.idx"), emit: vcf_files
+    tuple val(id), path("${id}.raw.snps.vcf"), path("${id}.raw.snps.vcf.idx"), emit: snps_output
+    tuple val(id), path("${id}.raw.indels.vcf"), path("${id}.raw.indels.vcf.idx"), emit: indels_output
 
     script:
     """
     run_clair3.sh --bam_fn ${id}.dedup.bam --ref_fn ${reference} --threads $task.cpus \
-    --model_path "${baseDir}"/resources/clair3_models/ont_guppy5 --output ./ -p ont --fast_mode \
+    --model_path "${baseDir}"/resources/clair3_models/r941_prom_sup_g5014 --output ./ -p ont --fast_mode \
     --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs --fast_mode
     gunzip *.gz
     mv merge_output.vcf "${id}.raw.snps.indels.mixed.vcf"
     mv merge_output.gvcf "${id}.raw.snps.indels.mixed.gvcf"
     gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.vcf"
     gatk IndexFeatureFile -I "${id}.raw.snps.indels.mixed.gvcf"
-    """
 
+    gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.mixed.vcf -O ${id}.raw.snps.vcf -select-type SNP
+    gatk SelectVariants -R ${reference} -V ${id}.raw.snps.indels.mixed.vcf -O ${id}.raw.indels.vcf -select-type INDEL
+    """
 }
+
 process VariantFilterMixture {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_gatk"
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
@@ -874,6 +907,7 @@ process VariantFilterMixture {
 
 process AnnotateMixture {
 
+      conda "$baseDir/env_spandx.yaml"
       label "spandx_snpeff"
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
@@ -887,7 +921,7 @@ process AnnotateMixture {
       //Check to see if there is a databae in the default location then run
       script:
       """
-      snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
+      snpEff eff -dataDir ${params.snpeff_cache} -c ${params.snpeff_config} -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} ${id}.PASS.snps.indels.mixed.vcf > ${id}.ALL.annotated.mixture.vcf
       """
 }
 
@@ -896,22 +930,21 @@ process AnnotateMixture {
 // TO DO - needs to be updated with Delly
 process PindelProcessing {
 
+      conda "$baseDir/env_spandx.yaml"
       label "spandx_pindel"
       tag { "$id" }
 
       input:
-      file reference
-      file reference_fai
-      val(id), file("${id}.dedup.bam"), file(alignment_index)
+      path reference
+      path reference_fai
+      tuple val(id), path("${id}.dedup.bam"), path(alignment_index)
 
       output:
-      file("pindel.out_D.vcf")
-      file("pindel.out_TD.vcf")
+      path("pindel.out_D.vcf")
+      path("pindel.out_TD.vcf")
 
-      // Pindel + threads to run a bit faster
-      // In the original script, there is a pindel.out_INT, here: pindel.out_INT_final
-     // To DO need to fix if statement below to have two seperate code blocks
 
+      script: 
       """
       echo -e "${id}.dedup.bam\t250\tB" > pindel.bam.config
       pindel -f ${reference} -T $task.cpus -i pindel.bam.config -o pindel.out
@@ -920,10 +953,9 @@ process PindelProcessing {
 
       for f in pindel.out_*; do
         pindel2vcf -r ${reference} -R ${reference.baseName} -d ARDaP -p \$f -v \${f}.vcf -e 5 -is 15 -as 50000
-        if (params.annotate) {
-
-          snpEff eff -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} \${f}.vcf > \${f}.vcf.annotated
-        }
+      if [ "${params.annotate}" == "true" ]; then
+            snpEff eff -dataDir ${params.snpeff_cache} -no-downstream -no-intergenic -ud 100 -v ${params.snpeff_database} \${f}.vcf > \${f}.vcf.annotated
+      fi
       done
       """
 }
@@ -931,6 +963,7 @@ process PindelProcessing {
     //Not a mixture
 process VariantCalling {
 
+      conda "$baseDir/env_spandx.yaml"
       label "spandx_gatk"
       tag { "$id" }
       publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: false, pattern: '*.gvcf'
@@ -968,6 +1001,7 @@ process VariantCalling {
 
 process FilterSNPs {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_gatk"
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
@@ -1011,6 +1045,7 @@ process FilterSNPs {
 
 process FilterIndels {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_gatk"
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
@@ -1051,6 +1086,7 @@ process FilterIndels {
 
 process AnnotateSNPs {
 
+      conda "$baseDir/env_spandx.yaml"
       label "spandx_snpeff"
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
@@ -1062,7 +1098,7 @@ process AnnotateSNPs {
       tuple val(id), path("${id}.PASS.snps.annotated.vcf")
 
       """
-      snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
+      snpEff eff -dataDir ${params.snpeff_cache} -c ${params.snpeff_config} -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $snp_pass > ${id}.PASS.snps.annotated.vcf
       """
 
 }
@@ -1070,6 +1106,7 @@ process AnnotateSNPs {
 
 process AnnotateIndels {
 
+    conda "$baseDir/env_spandx.yaml"
     label "spandx_snpeff"
     tag { "$id" }
     publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
@@ -1082,7 +1119,7 @@ process AnnotateIndels {
 
     //Look for the annotation in the default location
     """
-    snpEff eff -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
+    snpEff eff -dataDir ${params.snpeff_cache} -c ${params.snpeff_config} -nodownload -no-downstream -no-intergenic -ud 100 -v ${snpeff_database} $indel_pass > ${id}.PASS.indels.annotated.vcf
     """
 
 }
@@ -1097,6 +1134,8 @@ process AnnotateIndels {
 */
 
 process Master_vcf {
+
+    conda "$baseDir/env_spandx.yaml"
     label "master_vcf"
     publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: true
 
@@ -1111,7 +1150,7 @@ process Master_vcf {
 
     script:
     """
-    bash Master_vcf.sh ${reference_name}
+    bash ${baseDir}/bin/Master_vcf.sh ${reference_name}
     gatk VariantFiltration -R ${reference} -O out.filtered.vcf -V out.vcf \
     --cluster-size $params.CLUSTER_SNP -window $params.CLUSTER_WINDOW_SNP \
     -filter "QD < $params.QD_SNP" --filter-name "QDFilter" \
@@ -1122,6 +1161,8 @@ process Master_vcf {
 }
 
 process snp_matrix {
+
+      conda "$baseDir/env_spandx.yaml"
       label "SNP_matrix"
       publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: true
       publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: true, pattern: '*.nex'
@@ -1135,6 +1176,7 @@ process snp_matrix {
       path("MP_phylogeny.tre")
       path("ML_phylogeny.tre")
       path("All_SNPs_indels_annotated.txt")
+	  path("All_SNPs_indels_annotated_mixtures.txt")
       path("indel_matrix.nex")
       path("indel_SNP_matrix.nex")
       path("QC_metrics_summary.tsv")
@@ -1146,13 +1188,15 @@ process snp_matrix {
       def cmd = ""
       if (params.mixtures) {
           cmd = """
-          bash SNP_matrix.sh ${snpeff_database} ${baseDir}
-          bash Summary.sh ${ref} ${baseDir}
+          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir} ${params.snpeff_cache} ${params.snpeff_config} 
+		  python ${baseDir}/bin/process_vcf_mixtures.py > "All_SNPs_indels_annotated_mixtures.txt"
+          bash ${baseDir}/bin/Summary.sh ${ref} ${baseDir}
           """
       } else {
           cmd = """
-          bash SNP_matrix.sh ${snpeff_database} ${baseDir}
-          bash Summary_no_mixtures.sh ${ref} ${baseDir}
+          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir} ${params.snpeff_cache} ${params.snpeff_config} 
+		  python ${baseDir}/bin/process_vcf_mixtures.py > "All_SNPs_indels_annotated_mixtures.txt"
+          bash ${baseDir}/bin/Summary_no_mixtures.sh ${ref} ${baseDir}
           """
       }
 
@@ -1163,6 +1207,8 @@ process snp_matrix {
 }
 
 process snp_matrix_no_annotate {
+
+      conda "$baseDir/env_spandx.yaml"
       label "SNP_matrix"
       publishDir "./Outputs/Phylogeny", mode: 'copy', overwrite: true
 
@@ -1173,148 +1219,129 @@ process snp_matrix_no_annotate {
       path("Ortho_SNP_matrix.nex")
       path("MP_phylogeny.tre")
       path("ML_phylogeny.tre")
+	  path("QC_metrics_summary.tsv")
 
       script:
       """
-      bash SNP_matrix_no_annotate.sh ${baseDir}
+      bash ${baseDir}/bin/SNP_matrix_no_annotate.sh ${baseDir}
+	  bash ${baseDir}/bin/Summary.sh ${ref} ${baseDir}
       """
 }
 
 
 workflow {
 
-  // Annotation database check and download if required
-  if (params.annotation) {
-    if (params.database) {
-        println "Annotation has been requested. Looking for annotation database"
-        check_and_dl_database(reference_file)
-     } else {
-        exit 1, """
-        SPANDx requires a snpEff database to be specified for the annotation to work correctly.
-        Please use the --database flag to specify a snpEff database compatible with your
-        reference genome.
-        A list of available databases can be found here: https://sourceforge.net/projects/snpeff/files/
-        Please make sure the snpEff version matches the database version.
-        """
-     }
-   }
-
-  // Create reference indices, dictionary, and BED files
-  indexResults = IndexReference(reference_file)
-
-  // Generate synthetic reads if assemblies are present
-  if (params.assemblies) {
-      alignment_assembly = Read_synthesis(assembly_ch)
-  }
-
-  // Trim reads with Trimmomatic
-  trimmed_reads = Trimmomatic(fastq)
-
-  // Downsample reads if requested
-  downsampled_reads = Downsample(trimmed_reads)
-
-  all_bam_files = Channel.empty()
-  all_depth_files = Channel.empty()
-  assembly_bam_files = Channel.empty()
-
-  // Align reads against the reference
-  bam_files = ReferenceAlignment(indexResults.ref_indices, downsampled_reads, reference_file, indexResults.bed_files)
-  deduplicated_bams = Deduplicate(bam_files.bams)
-//
-  if (params.assemblies) {
-    deduplicated_bams_assemblies = ReferenceAlignment_assembly(indexResults.ref_indices, alignment_assembly, reference_file, indexResults.bed_files)
-  } else {
-    deduplicated_bams_assemblies = Channel.empty()
-  }
-
- if (params.ont) {
-    deduplicated_bams_ont = minimapAlign(indexResults.ref_indices, ont_reads, reference_file, indexResults.bed_files)
-      if (params.mixtures) {
-        all_variants_ont = VariantCallingMixture_Clair3(reference_file, indexResults.fai_files, indexResults.dict_files, deduplicated_bams_ont.dedup_bams)
-      } else {
-        all_variants_ont = VariantCalling_Clair3(reference_file, indexResults.fai_files, indexResults.dict_files, deduplicated_bams_ont.dedup_bams)
-      }
-  }  else {
-    deduplicated_bams_ont = Channel.empty()
-  }
-
-
-deduplicated_bams.dedup_bams.mix(deduplicated_bams_assemblies.dedup_bams, deduplicated_bams_ont.dedup_bams).set {all_deduplicated_bams}
-deduplicated_bams.dedup_bams.mix(deduplicated_bams_assemblies.dedup_bams).set {all_deduplicated_bams_ex_ont}
-//  if (params.single_end) {
-//    SE_bam_files = SE_reference_alignment(indexResults.ref_indices, single_end_fastq, reference_file, indexResults.bed_files)
-//    deduplicated_bams = Deduplicate(SE_bam_files.bams)
-//  }
-
-  // Calculate coverage statistics
-  bedcov_files = ReferenceCoverage(indexResults.bed_files, all_deduplicated_bams).collect()
-
-  // Merge bedcov files
-  merged_bedcov = Merge_bedcov(bedcov_files)
-
-  // Merge the channels into a single channel
-
-//TROUBLE WITH DIFFERENT DEDUPLICATED BAM CHANNELS HERE!!!!
-
-  // Variant Calling and Filtering
-  if (params.mixtures) {
-    all_variants = VariantCallingMixture(reference_file, indexResults.fai_files, indexResults.dict_files, all_deduplicated_bams_ex_ont)
-    if (params.ont) {
-    all_variants.vcf_files.mix(all_variants_ont.vcf_files).set {all_var_inc_ont}
-    filtered_mixed_variants = VariantFilterMixture(reference_file, indexResults.fai_files, indexResults.dict_files, all_var_inc_ont)
-    } else {
-    filtered_mixed_variants = VariantFilterMixture(reference_file, indexResults.fai_files, indexResults.dict_files, all_variants.vcf_files)
-    }
-
-
+    // --- 1. SETUP AND INDEXING ---
     if (params.annotation) {
-      annotated_mixed_variants = AnnotateMixture(filtered_mixed_variants)
+        if (params.database) {
+            println "Annotation has been requested. Looking for annotation database"
+            check_and_dl_database(reference_file)
+        } else {
+            exit 1, """
+            SPANDx requires a snpEff database to be specified for the annotation to work correctly.
+            Please use the --database flag to specify a snpEff database compatible with your
+            reference genome.
+            """
+        }
     }
+    indexResults = IndexReference(reference_file)
 
-    //  if (params.structural) {
-    //      structural_variants = PindelProcessing(reference_file, reference_fai, reference_dict, deduplicated_bams)
-    //  }
 
-  } else {
-    // Standard variant calling for non-mixture samples
-      all_variants = VariantCalling(reference_file, indexResults.fai_files, indexResults.dict_files, all_deduplicated_bams.dedup_bams)
-      if (params.ont) {
-        all_variants.vcf_files.mix(all_variants_ont.vcf_files).set {all_var_inc_ont}
-        filtered_snps = FilterSNPs(reference_file, indexResults.fai_files, indexResults.dict_files, all_var_inc_ont)
-        filtered_indels = FilterIndels(reference_file, indexResults.fai_files, indexResults.dict_files, all_var_inc_ont)
-      } else {
-        filtered_snps = FilterSNPs(reference_file, indexResults.fai_files, indexResults.dict_files, all_variants.snps_output)
-        filtered_indels = FilterIndels(reference_file, indexResults.fai_files, indexResults.dict_files, all_variants.indels_output)
-      }
+    // --- 2. PROCESS DATA FROM EACH SOURCE ---
 
-      if (params.annotation) {
-        annotated_snps = AnnotateSNPs(filtered_snps)
-        annotated_indels = AnnotateIndels(filtered_indels)
-      }
-  }
+    // Paired-End Illumina Data (Baseline)
+    pe_trimmed = Trimmomatic(fastq)
+    pe_downsampled = Downsample(pe_trimmed)
+    pe_alignment_out = ReferenceAlignment(indexResults.ref_indices, pe_downsampled, reference_file, indexResults.bed_files)
+    pe_dedup_out = Deduplicate(pe_alignment_out.bams)
 
-  // If phylogeny is enabled, create a master VCF and SNP matrix
-  if (params.phylogeny) {
-    if (params.ont) {
-      all_variants.gvcf_files.mix(all_variants_ont.gvcf_files).set {all_gvcf_var_inc_ont}
-      snp_matrix_ch = Master_vcf(all_gvcf_var_inc_ont.collect(), reference_file, indexResults.fai_files, indexResults.dict_files)
-      if (params.annotation) {
-        bam_files.depth_files.mix(deduplicated_bams_assemblies.depth_files, deduplicated_bams_ont.depth_files).set {all_depth_files}
-        depth_files_collected = all_depth_files.collect()
-        phylogeny_outputs = snp_matrix(snp_matrix_ch, depth_files_collected)
-      } else {
-        phylogeny_outputs = snp_matrix_no_annotate(snp_matrix_ch)
-      }
+    // Assembled Genomes Data (Optional)
+    def assembly_out
+    if (params.assemblies) {
+        synthetic_reads = Read_synthesis(assembly_ch)
+        assembly_out = ReferenceAlignment_assembly(indexResults.ref_indices, synthetic_reads, reference_file, indexResults.bed_files)
     } else {
-      snp_matrix_ch = Master_vcf(all_variants.gvcf_files.collect(), reference_file, indexResults.fai_files, indexResults.dict_files)
-      if (params.annotation) {
-        depth_files_collected = bam_files.depth_files.collect()
-        phylogeny_outputs = snp_matrix(snp_matrix_ch, depth_files_collected)
-      } else {
-        phylogeny_outputs = snp_matrix_no_annotate(snp_matrix_ch)
-      }
+        // If no assemblies, create a placeholder map with empty channels
+        assembly_out = [ dedup_bams: Channel.empty(), depth_files: Channel.empty() ]
     }
-  }
+
+    // ONT Data (Optional)
+    def ont_out
+    if (params.ont) {
+        ont_out = minimapAlign(indexResults.ref_indices, ont_reads, reference_file, indexResults.bed_files)
+    } else {
+        // If no ONT data, create a placeholder map with empty channels
+        ont_out = [ dedup_bams: Channel.empty(), depth_files: Channel.empty() ]
+    }
+
+    // --- 3. COMBINE RESULTS FROM ALL SOURCES ---
+    all_deduplicated_bams = pe_dedup_out.dedup_bams.mix(assembly_out.dedup_bams, ont_out.dedup_bams)
+    all_depth_files = pe_alignment_out.depth_files.mix(assembly_out.depth_files, ont_out.depth_files)
+
+
+    // --- 4. DOWNSTREAM ANALYSIS ---
+    bedcov_files = ReferenceCoverage(indexResults.bed_files, all_deduplicated_bams).collect()
+    merged_bedcov = Merge_bedcov(bedcov_files)
+
+    // Variant Calling and Filtering for Illumina/Assembly data
+    def illumina_variants
+    if (params.mixtures) {
+        // Combine PE and Assembly bams for mixture calling
+        illumina_bams = pe_dedup_out.dedup_bams.mix(assembly_out.dedup_bams)
+        illumina_variants = VariantCallingMixture(reference_file, indexResults.fai_files, indexResults.dict_files, illumina_bams)
+    } else {
+        illumina_bams = pe_dedup_out.dedup_bams.mix(assembly_out.dedup_bams)
+        illumina_variants = VariantCalling(reference_file, indexResults.fai_files, indexResults.dict_files, illumina_bams)
+    }
+
+    // Variant Calling for ONT data
+    def ont_variants
+    if (params.ont) {
+        if (params.mixtures) {
+            ont_variants = VariantCallingMixture_Clair3(reference_file, indexResults.fai_files, indexResults.dict_files, ont_out.dedup_bams)
+        } else {
+            ont_variants = VariantCalling_Clair3(reference_file, indexResults.fai_files, indexResults.dict_files, ont_out.dedup_bams)
+        }
+    } else {
+        // Placeholder for ONT variants if not used
+        ont_variants = [ gvcf_files: Channel.empty(), vcf_files: Channel.empty(), snps_output: Channel.empty(), indels_output: Channel.empty() ]
+    }
+
+    // Filter and Annotate based on mixture vs. standard mode
+    if (params.mixtures) {
+        all_vcfs = illumina_variants.vcf_files.mix(ont_variants.vcf_files)
+        filtered_mixed_variants = VariantFilterMixture(reference_file, indexResults.fai_files, indexResults.dict_files, all_vcfs)
+        if (params.annotation) {
+            annotated_mixed_variants = AnnotateMixture(filtered_mixed_variants)
+        }
+    } else {
+                // --- THIS IS THE FIX ---
+                // Now we mix the split outputs from both Illumina and ONT
+                all_snps = illumina_variants.snps_output.mix(ont_variants.snps_output)
+                all_indels = illumina_variants.indels_output.mix(ont_variants.indels_output)
+
+                // The rest of the pipeline now receives all variants
+                filtered_snps = FilterSNPs(reference_file, indexResults.fai_files, indexResults.dict_files, all_snps)
+                filtered_indels = FilterIndels(reference_file, indexResults.fai_files, indexResults.dict_files, all_indels)
+
+                if (params.annotation) {
+                    annotated_snps = AnnotateSNPs(filtered_snps)
+                    annotated_indels = AnnotateIndels(filtered_indels)
+                }
+    }
+
+    // --- 5. PHYLOGENY ---
+    if (params.phylogeny) {
+        all_gvcfs = illumina_variants.gvcf_files.mix(ont_variants.gvcf_files).collect()
+        snp_matrix_ch = Master_vcf(all_gvcfs, reference_file, indexResults.fai_files, indexResults.dict_files)
+
+        if (params.annotation) {
+            depth_files_collected = all_depth_files.collect()
+            phylogeny_outputs = snp_matrix(snp_matrix_ch, depth_files_collected)
+        } else {
+            phylogeny_outputs = snp_matrix_no_annotate(snp_matrix_ch)
+        }
+    }
 }
 
 workflow.onComplete {

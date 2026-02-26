@@ -1,19 +1,23 @@
 name: spandx
 channels:
   - bioconda
+  - conda-forge
+  - defaults
 dependencies:
   - art
   - trimmomatic
   - bwa
-  - bedtools=2.28.0
+  - bedtools
   - seqtk
   - pindel
   - mosdepth
-  - samtools=1.9
+  - samtools
   - picard
-  - gatk4=4.1.8
-  - snpEff=5.2
-  - nextflow=20.04.1
+  - gatk4
+  - snpEff
+  - nextflow
   - fasttree
   - medaka
   - strobealign
+  - freebayes
+ 

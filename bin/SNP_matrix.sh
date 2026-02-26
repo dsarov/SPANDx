@@ -12,6 +12,8 @@
 #set variant genome
 variant_genome_path=$1
 baseDir=$2
+snpeff_datadir=$3
+snpeff_config=$4
 
 echo "Creating VCF tables"
 gatk VariantsToTable -V out.filtered.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -O out.vcf.table
@@ -22,8 +24,8 @@ gatk VariantsToTable -V out.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -O 
 # Creates the SNP matrix for PAUP
 ###########################################################################
 
-echo "Creating SNP matrix"
-echo "Removing mixed SNPs, "
+echo -e "Creating SNP matrix for PAUP\n"
+echo -e "Removing mixed SNPs\n"
 awk '$5 ~/SNP/' out.vcf.table | awk '$4 !~/[.,].*/' | grep -v '\./\.' > out.vcf.table.snps.clean 
 #replace A/A, C/C, G/G, T/T genotypes with single nucleotides A, G, C, T etc etc 
 sed -i 's#A/A\|A|A#A#g' out.vcf.table.snps.clean
@@ -41,12 +43,12 @@ grid=$(paste snp.location grid.nucleotide)
 echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > Ortho_SNP_matrix.nex
 
 
-###########################################################################
-# Creates the indel matrix for PAUP
-###########################################################################
+echo -e "###########################################################################"
+echo -e "# Creates the indel matrix for PAUP"
+echo -e "###########################################################################"
 
-echo "Creating indel matrix"
-echo "Removing mixed indels"
+echo -e "Creating indel matrix\n"
+echo -e "Removing mixed indels\n"
 awk '$5 ~/INDEL/' out.vcf.table | awk '$4 !~/\.,\*/' | grep -v '\./\.' | grep -v ',\*' > out.vcf.table.indels.clean
 awk ' { for (i=6; i<=NF; i++) {
         if ($i ~ /\//) { 
@@ -260,8 +262,9 @@ awk ' { for (i=6; i<=NF; i++) {
        }; 
        {print $0} ' out.vcf.table.all.tmp > out.vcf.table.all
 
-	
-snpEff eff -no-downstream -no-intergenic -ud 100 -formatEff -v ${variant_genome_path} out.vcf > out.annotated.vcf
+echo "running: snpEff eff -dataDir ${snpeff_cache} -c ${snpeff_config} -no-downstream -no-intergenic -ud 100 -formatEff -v ${variant_genome_path} out.vcf > out.annotated.vcf"
+
+snpEff eff -dataDir ${snpeff_datadir} -c ${snpeff_config} -no-downstream -no-intergenic -ud 100 -formatEff -v ${variant_genome_path} out.vcf > out.annotated.vcf
 	
 #remove headers from annotated vcf and out.vcf
 grep -v '#' out.annotated.vcf > out.annotated.vcf.headerless
