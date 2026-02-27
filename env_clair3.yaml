@@ -1,0 +1,9 @@
+name: spandx_clair3
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - clair3
+  - gatk4
+  - bcftools

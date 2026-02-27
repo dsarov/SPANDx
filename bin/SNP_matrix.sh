@@ -12,6 +12,8 @@
 #set variant genome
 variant_genome_path=$1
 baseDir=$2
+snpeff_datadir=$3
+snpeff_config=$4
 
 echo "Creating VCF tables"
 gatk VariantsToTable -V out.filtered.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -O out.vcf.table
@@ -22,8 +24,8 @@ gatk VariantsToTable -V out.vcf -F CHROM -F POS -F REF -F ALT -F TYPE -GF GT -O 
 # Creates the SNP matrix for PAUP
 ###########################################################################
 
-echo "Creating SNP matrix"
-echo "Removing mixed SNPs, "
+echo -e "Creating SNP matrix for PAUP\n"
+echo -e "Removing mixed SNPs\n"
 awk '$5 ~/SNP/' out.vcf.table | awk '$4 !~/[.,].*/' | grep -v '\./\.' > out.vcf.table.snps.clean 
 #replace A/A, C/C, G/G, T/T genotypes with single nucleotides A, G, C, T etc etc 
 sed -i 's#A/A\|A|A#A#g' out.vcf.table.snps.clean
@@ -41,12 +43,12 @@ grid=$(paste snp.location grid.nucleotide)
 echo -e "\n#nexus\nbegin data;\ndimensions ntax=$ntaxa nchar=$nchar;\nformat symbols=\"AGCT\" gap=. transpose;\ntaxlabels $taxa;\nmatrix\n$grid\n;\nend;" > Ortho_SNP_matrix.nex
 
 
-###########################################################################
-# Creates the indel matrix for PAUP
-###########################################################################
+echo -e "###########################################################################"
+echo -e "# Creates the indel matrix for PAUP"
+echo -e "###########################################################################"
 
-echo "Creating indel matrix"
-echo "Removing mixed indels"
+echo -e "Creating indel matrix\n"
+echo -e "Removing mixed indels\n"
 awk '$5 ~/INDEL/' out.vcf.table | awk '$4 !~/\.,\*/' | grep -v '\./\.' | grep -v ',\*' > out.vcf.table.indels.clean
 awk ' { for (i=6; i<=NF; i++) {
         if ($i ~ /\//) { 
@@ -194,40 +196,40 @@ done
 
 awk '
     BEGIN { FS=OFS="\t" }
-    # Process the header
-    NR == FNR && FNR == 1 {
-        header = $0
-        next
+    FNR == 1 && NR == FNR {
+        # Store the header from the first file
+        for (i = 1; i <= NF; i++) header[i] = $i;
+        next;
     }
-    # Process the body of the matrices
-    NR == FNR {
-        for (i = 1; i <= NF; i++) matrix[FNR, i] = $i
-        next
+    FNR == 1 {
+        # Print the header only once, from the first file
+        for (i = 1; i <= NF; i++) printf "%s%s", header[i], (i < NF ? OFS : ORS);
+        next;
     }
-    # Skip the header of the second file
-    FNR == 1 { print header; next }
-    # Sum the upper triangle values of the matrix
-    {
-        printf $1 # Print the row label without a newline
+    FNR > 1 && NR == FNR {
+        # Store the values from the first matrix
+        for (i = 2; i <= NF; i++) matrix[FNR, i] = ($i == "-" ? 0 : $i);
+    }
+    FNR > 1 && NR > FNR {
+        # Process and merge the values from the second matrix
+        printf "%s", $1;  # print the sample name
         for (i = 2; i <= NF; i++) {
-            if (i < FNR) {
-                printf OFS # Print an OFS for lower triangle elements
-            } else if (i == FNR) {
-                printf "%s-", OFS # Print the "-" for diagonal elements
+            if (i == FNR) {
+                printf OFS "-";  # print "-" for diagonal
+            } else if (i < FNR) {
+                printf OFS "";  # leave lower triangle blank
             } else {
-                val1 = matrix[FNR, i]
-                val2 = $i
-                if (val1 == "-" || val2 == "-") {
-                    sum = "-" # Preserve the "-" for non-numeric fields
-                } else {
-                    sum = val1 + val2 # Add the numeric values
-                }
-                printf "%s", OFS sum
+                # Merge values from both matrices, treating "-" as 0
+                val1 = (matrix[FNR, i] == 0 ? 0 : matrix[FNR, i]);
+                val2 = ($i == "-" ? 0 : $i);
+                sum = val1 + val2;
+                printf OFS sum;
             }
         }
-        print "" # End the line
+        printf ORS;
     }
 ' "$output_indel" "$output_snp" > merged_snp_indel_matrix.tsv
+
 
 
 ###############################################
@@ -260,8 +262,9 @@ awk ' { for (i=6; i<=NF; i++) {
        }; 
        {print $0} ' out.vcf.table.all.tmp > out.vcf.table.all
 
-	
-snpEff eff -no-downstream -no-intergenic -ud 100 -formatEff -v ${variant_genome_path} out.vcf > out.annotated.vcf
+echo "running: snpEff eff -dataDir ${snpeff_cache} -c ${snpeff_config} -no-downstream -no-intergenic -ud 100 -formatEff -v ${variant_genome_path} out.vcf > out.annotated.vcf"
+
+snpEff eff -dataDir ${snpeff_datadir} -c ${snpeff_config} -no-downstream -no-intergenic -ud 100 -formatEff -v ${variant_genome_path} out.vcf > out.annotated.vcf
 	
 #remove headers from annotated vcf and out.vcf
 grep -v '#' out.annotated.vcf > out.annotated.vcf.headerless
