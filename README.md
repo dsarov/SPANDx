@@ -45,7 +45,7 @@ git clone https://github.com/dsarov/SPANDx.git ./spandx
 2) Install a spandx environment using conda
 
 ```
-conda env create --name spandx -f ./spandx/env.yaml
+conda env create --name spandx -f ./spandx/env_spandx.yaml
 ```
 
 Activate the spandx environment that was installed by conda, 
