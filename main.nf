@@ -14,7 +14,7 @@ nextflow.enable.dsl=2
 log.info """
 ================================================================================
                            NF-SPANDx
-                             v4.2
+                             v4.3
 ================================================================================
 
 Thanks for using SPANDx!!
@@ -298,7 +298,6 @@ Please check that you have included the reference file in the current directory 
 
 
 process check_and_dl_database {
-    conda "$baseDir/env_spandx.yaml"
     label "snpeff_dl_db"
 
     input:
@@ -309,7 +308,7 @@ process check_and_dl_database {
 
     script:
     """
-    bash ${baseDir}/bin/Check_and_DL_SnpEff_database.sh ${params.database} ${baseDir} ${ref} ${params.snpeff_cache} ${params.snpeff_config} 
+    bash ${baseDir}/bin/Check_and_DL_SnpEff_database.sh ${params.database} ${baseDir} ${ref} ${params.snpeff_cache} ${params.snpeff_config}
     """
 }
 
@@ -321,11 +320,12 @@ process check_and_dl_database {
 
 process IndexReference {
 
-        conda "$baseDir/env_spandx.yaml"
+
         label "index"
+        conda System.getenv('CONDA_PREFIX')
 
         input:
-        file reference_file
+        path reference_file
 
         output:
         path "ref.*", emit: ref_indices
@@ -354,8 +354,8 @@ process IndexReference {
 
 process Read_synthesis {
 
-    conda "$baseDir/env_spandx.yaml"
     label "spandx_default"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
 
     input:
@@ -391,8 +391,9 @@ Part 2: read processing, reference alignment and variant identification
 */
 process Trimmomatic {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_default"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
 
     input:
@@ -422,8 +423,9 @@ process Trimmomatic {
 
 process minimapAlign {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_default"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
 
@@ -455,8 +457,9 @@ process minimapAlign {
 */
   process Downsample {
 
-      conda "$baseDir/env_spandx.yaml"
+
       label "spandx_default"
+      conda System.getenv('CONDA_PREFIX')
       tag { "$id" }
     // publishDir "./Clean_reads", mode: 'copy', overwrite: false
 
@@ -490,8 +493,9 @@ process minimapAlign {
 
 process ReferenceAlignment_assembly {
 
-  conda "$baseDir/env_spandx.yaml"
+
   label "spandx_alignment"
+  conda System.getenv('CONDA_PREFIX')
   tag { "$id" }
   publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
 
@@ -536,8 +540,9 @@ process ReferenceAlignment_assembly {
 
 process ReferenceAlignment {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_alignment"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
 
     input:
@@ -591,8 +596,9 @@ process ReferenceAlignment {
   =======================================================================
   */
 process Trimmomatic_SE {
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_default"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
 
     input:
@@ -620,8 +626,9 @@ process Trimmomatic_SE {
   =======================================================================
   */
 process Downsample_SE {
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_default"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
 
     input:
@@ -648,8 +655,9 @@ process Downsample_SE {
   */
 process SE_reference_alignment {
 
-      conda "$baseDir/env_spandx.yaml"
+
       label "spandx_alignment"
+      conda System.getenv('CONDA_PREFIX')
       tag { "$id" }
 
       input:
@@ -661,7 +669,7 @@ process SE_reference_alignment {
       output:
       tuple val(id), path("${id}.bam"), path("${id}.bam.bai")
       tuple val(id), path("${id}.depth.txt")
-      
+
 	  script:
       """
       bwa mem -R '@RG\\tID:${params.org}\\tSM:${id}\\tPL:ILLUMINA' -a \
@@ -684,8 +692,9 @@ process SE_reference_alignment {
 */
 process Deduplicate {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_default"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
     publishDir "./Outputs/bams", mode: 'copy', pattern: "*.dedup*", overwrite: true
 
@@ -730,8 +739,9 @@ process Deduplicate {
 */
 process ReferenceCoverage {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_default"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
 
     input:
@@ -749,8 +759,9 @@ process ReferenceCoverage {
 
 process Merge_bedcov {
 
-  conda "$baseDir/env_spandx.yaml"
+
   label "bedcov"
+  conda System.getenv('CONDA_PREFIX')
 // tag { "$id" }
   publishDir "./Outputs/Coverage", mode: 'copy', overwrite: true
 
@@ -771,8 +782,9 @@ process Merge_bedcov {
 */
 process VariantCallingMixture {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_gatk"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
     publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: true, pattern: '*.gvcf'
 
@@ -825,9 +837,10 @@ process VariantCallingMixture_Clair3 {
 
     script:
     """
-    run_clair3.sh --bam_fn ${id}.dedup.bam --ref_fn ${reference} --threads $task.cpus \
+	CWD=\$(pwd)
+    run_clair3.sh --bam_fn ${id}.dedup.bam --ref_fn \${CWD}/${reference} --threads $task.cpus \
     --model_path "${baseDir}"/resources/clair3_models/r941_prom_sup_g5014 --output ./ -p ont --fast_mode \
-    --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs --fast_mode
+    --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs
     gunzip *.gz
     mv merge_output.vcf "${id}.raw.snps.indels.mixed.vcf"
     mv merge_output.gvcf "${id}.raw.snps.indels.mixed.gvcf"
@@ -861,9 +874,9 @@ process VariantCalling_Clair3 {
 
     script:
     """
-    run_clair3.sh --bam_fn ${id}.dedup.bam --ref_fn ${reference} --threads $task.cpus \
+    run_clair3.sh --bam_fn ${task.workDir}/${id}.dedup.bam --ref_fn ${task.workDir}/${reference} --threads $task.cpus \
     --model_path "${baseDir}"/resources/clair3_models/r941_prom_sup_g5014 --output ./ -p ont --fast_mode \
-    --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs --fast_mode
+    --gvcf --enable_long_indel --sample_name="${id}" --include_all_ctgs
     gunzip *.gz
     mv merge_output.vcf "${id}.raw.snps.indels.mixed.vcf"
     mv merge_output.gvcf "${id}.raw.snps.indels.mixed.gvcf"
@@ -877,8 +890,9 @@ process VariantCalling_Clair3 {
 
 process VariantFilterMixture {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_gatk"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
@@ -907,8 +921,9 @@ process VariantFilterMixture {
 
 process AnnotateMixture {
 
-      conda "$baseDir/env_spandx.yaml"
+
       label "spandx_snpeff"
+      conda System.getenv('CONDA_PREFIX')
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
@@ -930,8 +945,9 @@ process AnnotateMixture {
 // TO DO - needs to be updated with Delly
 process PindelProcessing {
 
-      conda "$baseDir/env_spandx.yaml"
+
       label "spandx_pindel"
+      conda System.getenv('CONDA_PREFIX')
       tag { "$id" }
 
       input:
@@ -944,7 +960,7 @@ process PindelProcessing {
       path("pindel.out_TD.vcf")
 
 
-      script: 
+      script:
       """
       echo -e "${id}.dedup.bam\t250\tB" > pindel.bam.config
       pindel -f ${reference} -T $task.cpus -i pindel.bam.config -o pindel.out
@@ -963,8 +979,9 @@ process PindelProcessing {
     //Not a mixture
 process VariantCalling {
 
-      conda "$baseDir/env_spandx.yaml"
+
       label "spandx_gatk"
+      conda System.getenv('CONDA_PREFIX')
       tag { "$id" }
       publishDir "./Outputs/Variants/GVCFs", mode: 'copy', overwrite: false, pattern: '*.gvcf'
 
@@ -1001,8 +1018,9 @@ process VariantCalling {
 
 process FilterSNPs {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_gatk"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
@@ -1045,8 +1063,9 @@ process FilterSNPs {
 
 process FilterIndels {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_gatk"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
     publishDir "./Outputs/Variants/VCFs", mode: 'copy', overwrite: true
 
@@ -1086,8 +1105,9 @@ process FilterIndels {
 
 process AnnotateSNPs {
 
-      conda "$baseDir/env_spandx.yaml"
+
       label "spandx_snpeff"
+      conda System.getenv('CONDA_PREFIX')
       tag { "$id" }
       publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
@@ -1106,8 +1126,9 @@ process AnnotateSNPs {
 
 process AnnotateIndels {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "spandx_snpeff"
+    conda System.getenv('CONDA_PREFIX')
     tag { "$id" }
     publishDir "./Outputs/Variants/Annotated", mode: 'copy', overwrite: true
 
@@ -1135,8 +1156,9 @@ process AnnotateIndels {
 
 process Master_vcf {
 
-    conda "$baseDir/env_spandx.yaml"
+
     label "master_vcf"
+    conda System.getenv('CONDA_PREFIX')
     publishDir "./Outputs/Master_vcf", mode: 'copy', overwrite: true
 
     input:
@@ -1162,8 +1184,8 @@ process Master_vcf {
 
 process snp_matrix {
 
-      conda "$baseDir/env_spandx.yaml"
       label "SNP_matrix"
+      conda System.getenv('CONDA_PREFIX')
       publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: true
       publishDir "./Outputs/Phylogeny_and_annotation", mode: 'copy', overwrite: true, pattern: '*.nex'
 
@@ -1188,13 +1210,13 @@ process snp_matrix {
       def cmd = ""
       if (params.mixtures) {
           cmd = """
-          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir} ${params.snpeff_cache} ${params.snpeff_config} 
+          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir} ${params.snpeff_cache} ${params.snpeff_config}
 		  python ${baseDir}/bin/process_vcf_mixtures.py > "All_SNPs_indels_annotated_mixtures.txt"
           bash ${baseDir}/bin/Summary.sh ${ref} ${baseDir}
           """
       } else {
           cmd = """
-          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir} ${params.snpeff_cache} ${params.snpeff_config} 
+          bash ${baseDir}/bin/SNP_matrix.sh ${snpeff_database} ${baseDir} ${params.snpeff_cache} ${params.snpeff_config}
 		  python ${baseDir}/bin/process_vcf_mixtures.py > "All_SNPs_indels_annotated_mixtures.txt"
           bash ${baseDir}/bin/Summary_no_mixtures.sh ${ref} ${baseDir}
           """
@@ -1208,8 +1230,8 @@ process snp_matrix {
 
 process snp_matrix_no_annotate {
 
-      conda "$baseDir/env_spandx.yaml"
       label "SNP_matrix"
+      conda System.getenv('CONDA_PREFIX')
       publishDir "./Outputs/Phylogeny", mode: 'copy', overwrite: true
 
       input:
@@ -1219,12 +1241,15 @@ process snp_matrix_no_annotate {
       path("Ortho_SNP_matrix.nex")
       path("MP_phylogeny.tre")
       path("ML_phylogeny.tre")
-	  path("QC_metrics_summary.tsv")
+	    path("QC_metrics_summary.tsv")
+      path("snp_differences_matrix.tsv")
+
+
 
       script:
       """
       bash ${baseDir}/bin/SNP_matrix_no_annotate.sh ${baseDir}
-	  bash ${baseDir}/bin/Summary.sh ${ref} ${baseDir}
+	    bash ${baseDir}/bin/Summary_no_mixtures.sh ${ref} ${baseDir}
       """
 }
 
