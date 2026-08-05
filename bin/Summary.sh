@@ -51,19 +51,13 @@ for (( i=0; i<n; i++ )); do
   variant_FAIL_count=$(cat ../../../Outputs/Variants/VCFs/${sequences[$i]}.FAIL.snps.indels.mixed.vcf | grep -v '#' | wc -l)
   Mapped_reads=$(samtools idxstats ../../../Outputs/bams/${sequences[$i]}.dedup.bam |  awk '{ total += $3 } END {print total }')
   Avg_cov=$(cat "${sequences[$i]}".depth.txt)
-  Mix_count=$(grep -w "${sequences[$i]}" mixture_sum.txt | awk '{print $2}')
-  #Mixed_variants=$(All_SNPs_indels_annotated.txt
-  
+  Mix_count=$(awk -v sequence="${sequences[$i]}" '$1 == sequence {print $2}' mixture_sum.txt)
+    
   
   echo -e "${sequences[$i]}\t$variant_PASS_count\t$variant_FAIL_count\t$Mix_count\t$Avg_cov\t$Mapped_reads" > ${sequences[$i]}.summary
-  #echo -e "${sequences[$i]}\t$variant_PASS_count\t$variant_FAIL_count\t$Avg_cov\t$Mapped_reads" > ${sequences[$i]}.summary
-  
+    
 done
   
 cat SNP_summary_header ${sequences[@]/%/.summary} > QC_metrics_summary.tsv
 
-#rm SNP_summary_header
-#rm ${sequences[@]/%/.summary} 
-
-
-#exit 0
+exit 0
